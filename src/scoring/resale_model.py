@@ -428,16 +428,23 @@ def estimate_resale_price(
     # Multiplicateur combiné plafonné à 1.65
     attribute_boost = min(1.65, round(material_mult * rarity_mult, 2))
 
-    # 3. Ajustement Goût Rita (Désirabilité & Vélocité)
-    eff_taste = taste_score if taste_score is not None else distinct_pct
-    eff_taste = 0.50 if eff_taste is None else float(eff_taste)
+    # 3. Ajustement Goût Rita (Désirabilité & Vélocité si actif)
+    taste_enabled = True
+    if config is not None:
+        taste_enabled = bool(config.get("taste_filter_enabled", True))
 
-    if eff_taste >= 0.80:
-        taste_mult = 1.15 + (eff_taste - 0.80) * 0.75  # 1.15 à 1.30
-    elif eff_taste >= 0.55:
-        taste_mult = 0.95 + (eff_taste - 0.55) * 0.80  # 0.95 à 1.15
+    if taste_enabled:
+        eff_taste = taste_score if taste_score is not None else distinct_pct
+        eff_taste = 0.50 if eff_taste is None else float(eff_taste)
+
+        if eff_taste >= 0.80:
+            taste_mult = 1.15 + (eff_taste - 0.80) * 0.75  # 1.15 à 1.30
+        elif eff_taste >= 0.55:
+            taste_mult = 0.95 + (eff_taste - 0.55) * 0.80  # 0.95 à 1.15
+        else:
+            taste_mult = 0.80 + max(0.0, eff_taste - 0.40) * 0.75  # 0.80 à 0.95
     else:
-        taste_mult = 0.80 + max(0.0, eff_taste - 0.40) * 0.75  # 0.80 à 0.95
+        taste_mult = 1.00
 
     # 4. Calcul du Prix de Revente Cible Brut
     revente_brute = base_price * attribute_boost * taste_mult

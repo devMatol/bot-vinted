@@ -338,9 +338,11 @@ class TelegramNotifier:
 
         # Affichage Goût Rita et Favoris similaires
         taste_val = taste_score if taste_score is not None else decision_res.details.get("taste_score")
+        taste_active = decision_res.details.get("taste_filter_enabled", True)
         taste_block = ""
         if taste_val is not None:
-            taste_block = f"👗 <b>Goût Rita :</b> <b>{taste_val * 100:.0f} %</b>\n"
+            pause_tag = "" if taste_active else " <i>(Filtre en pause ⏸️)</i>"
+            taste_block = f"👗 <b>Goût Rita :</b> <b>{taste_val * 100:.0f} %</b>{pause_tag}\n"
             if favourite_matches:
                 fav_lines = []
                 for fm in favourite_matches[:2]:

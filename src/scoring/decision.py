@@ -183,23 +183,35 @@ def make_decision(
         market_score = max(0.0, 30.0 - (market_ratio - 1.0) * 30.0)
 
     # 3. Sous-score de goût / distinctivité (0 à 100)
-    # Si le modèle de goût est présent et valide, on utilise taste_score
-    if taste_score is not None:
-        eff_taste_score = taste_score
+    taste_enabled = bool(cfg.get("taste_filter_enabled", True))
+    if taste_enabled:
+        if taste_score is not None:
+            eff_taste_score = taste_score
+        else:
+            eff_taste_score = distinct_pct if distinct_pct is not None else distinct_score
+        taste_weight = float(weights.get("taste", weights.get("distinct", 0.25)))
     else:
-        eff_taste_score = distinct_pct if distinct_pct is not None else distinct_score
+        eff_taste_score = 0.50
+        taste_weight = 0.0
 
     taste_score_100 = eff_taste_score * 100.0
-    taste_weight = float(weights.get("taste", weights.get("distinct", 0.25)))
 
-    # 4. Combinaison linéaire pondérée
+    # 4. Combinaison linéaire pondérée normalisée
+    w_rules = float(weights.get("rules", 0.35))
+    w_margin = float(weights.get("margin", 0.35))
+    w_market = float(weights.get("market", 0.15))
+    w_signals = float(weights.get("signals", 0.15))
+    total_w = w_rules + taste_weight + w_margin + w_market + w_signals
+
     raw_final_score = (
-        float(weights.get("rules", 0.25)) * rule_score +
+        w_rules * rule_score +
         taste_weight * taste_score_100 +
-        float(weights.get("margin", 0.30)) * margin_score +
-        float(weights.get("market", 0.10)) * market_score +
-        float(weights.get("signals", 0.10)) * listing_signal_score
+        w_margin * margin_score +
+        w_market * market_score +
+        w_signals * listing_signal_score
     )
+    if total_w > 0:
+        raw_final_score = raw_final_score / total_w
 
     # Malus qualité photo
     stock_photo_thresh = float(cfg.get("clip_stock_photo_threshold", 0.5))
@@ -258,6 +270,7 @@ def make_decision(
         "distinct_score": distinct_score,
         "distinct_pct": round(eff_taste_score, 4),
         "taste_score": round(taste_score, 4) if taste_score is not None else None,
+        "taste_filter_enabled": taste_enabled,
         "damage_score": round(damage_score, 3),
         "stock_photo_score": round(stock_photo_score, 3),
         "margin_score": round(margin_score, 1),

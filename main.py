@@ -478,13 +478,14 @@ def tri_worker(
                 except Exception as e:
                     logger.debug(f"Erreur téléchargement/encodage vignette #{item.get('id')}: {e}")
 
-            # Filtrage précoce sur le goût de la vignette
+            # Filtrage précoce sur le goût de la vignette (si actif)
             # Tolérance accrue pour les grandes marques (Tier 3 et 1.5)
+            taste_filter_enabled = bool(config.get("taste_filter_enabled", True))
             base_thumb_min = float(config.get("thumb_taste_min", 0.40))
             brand_tolerance = 0.08 if rule_res.tier >= 1.5 else 0.0
             effective_thumb_min = max(0.25, base_thumb_min - brand_tolerance)
 
-            if taste_score is not None and taste_score < effective_thumb_min:
+            if taste_filter_enabled and taste_score is not None and taste_score < effective_thumb_min:
                 stats.record_thumb_reject(time.time() - discovered_at)
                 log_verdict(False, item, price, f"goût Rita {taste_score * 100:.0f}% sur la vignette")
                 record_decision(DecisionResult(
@@ -503,10 +504,10 @@ def tri_worker(
                 q_tri.task_done()
                 continue
 
-            # Priorité dans q_ouvrir : plus le goût Rita et le prestige de marque sont élevés,
-            # plus l'annonce passe en premier (boost grandes marques)
+            # Priorité dans q_ouvrir : prestige de marque et distinctivité (goût Rita si actif)
             tier_boost = 0.30 if rule_res.tier >= 3.0 else (0.15 if rule_res.tier >= 1.5 else 0.0)
-            priority_val = -((taste_score if taste_score is not None else 0.50) + tier_boost)
+            priority_taste = (taste_score if (taste_score is not None and taste_filter_enabled) else 0.50)
+            priority_val = -(priority_taste + tier_boost)
             cnt = next(priority_counter)
             put_priority_queue_drop_lowest(q_ouvrir, priority_val, cnt, (item, search_def, domain, country))
             q_tri.task_done()
