@@ -178,13 +178,13 @@ class PipelineStats:
             self.last_radar_cycle_s = cycle_s
 
     def _check_log_50(self):
-        if self.total_handled > 0 and self.total_handled % 50 == 0:
+        if self.total_handled > 0 and self.total_handled % 10 == 0:
             avg_w = (sum(self.delays) / len(self.delays)) if self.delays else 0.0
             logger.info(
-                f"⏱️ tour radar {self.last_radar_cycle_s:.1f}s | "
-                f"files tri/ouvrir/juge : {self.q_tri.qsize()}/{self.q_ouvrir.qsize()}/{self.q_juge.qsize()} | "
+                f"⏱️ Tour radar {self.last_radar_cycle_s:.1f}s | "
+                f"Files tri/ouvrir/juge : {self.q_tri.qsize()}/{self.q_ouvrir.qsize()}/{self.q_juge.qsize()} | "
                 f"{self.opened_count} ouvertes, {self.rejected_thumb_count} rejetées sur vignette | "
-                f"délai découverte -> verdict {avg_w:.1f}s"
+                f"Total jugées : {self.total_handled} (délai moyen {avg_w:.1f}s)"
             )
 
 
@@ -296,6 +296,7 @@ def radar_worker(
     Pour chaque annonce jamais vue : prefilter, puis l'envoie dans q_tri.
     """
     logger.info("📡 Étage RADAR démarré (1 thread catalogue continu).")
+    radar_cycle = 0
 
     while not stop_event.is_set():
         try:
@@ -310,6 +311,7 @@ def radar_worker(
 
             grouped_jobs = build_search_groups(searches)
             t_cycle_start = time.time()
+            new_items_in_cycle = 0
 
             for c in active_countries:
                 if stop_event.is_set():
@@ -386,6 +388,7 @@ def radar_worker(
                             continue
 
                         # Transmission immédiate à l'étage de TRI
+                        new_items_in_cycle += 1
                         put_queue_drop_oldest(q_tri, (it, search_def, domain, c), "q_tri")
 
                 if c in first_run_countries:
@@ -394,6 +397,14 @@ def radar_worker(
 
             cycle_duration = time.time() - t_cycle_start
             stats.set_radar_cycle_time(cycle_duration)
+            radar_cycle += 1
+
+            if new_items_in_cycle > 0 or radar_cycle % 3 == 0:
+                logger.info(
+                    f"📡 Tour radar #{radar_cycle} ({cycle_duration:.1f}s) : "
+                    f"{new_items_in_cycle} nouvelle(s) annonce(s) transmise(s) au TRI | "
+                    f"Files: tri={q_tri.qsize()} ouvrir={q_ouvrir.qsize()}"
+                )
 
             # Pause intelligente entre tours de radar
             time.sleep(max(1.0, polling_interval))
