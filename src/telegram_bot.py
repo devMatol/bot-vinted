@@ -4,8 +4,11 @@ import time
 import threading
 import requests
 import os
+import re
+import html
+import shutil
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from src.dataset_analyzer import DatasetAnalyzer
 
@@ -37,6 +40,15 @@ COUNTRY_DOMAINS = {
 }
 
 ALL_SUPPORTED_COUNTRIES = ["fr", "it", "de", "es", "be", "nl", "pt", "at"]
+
+FLAW_LABELS = {
+    "DEFECT": "🧵 Défaut / Abîmé / Tache",
+    "STYLE": "👗 Pas mon style",
+    "PRICE": "💸 Trop cher",
+    "FAKE": "⚠️ Faux / Dupe",
+    "CHILD": "👶 Vêtement enfant",
+    "COMMENT": "💬 Commentaire libre"
+}
 
 class TelegramCommandHandler:
     """Écoute et exécute les commandes et évaluations interactives Telegram."""
@@ -150,6 +162,12 @@ class TelegramCommandHandler:
         if not text:
             return
 
+        # 1. Vérification réponse (Reply) à une alerte envoyée par le bot
+        reply_to = message.get("reply_to_message")
+        if reply_to and not text.startswith("/"):
+            self._handle_reply_annotation(message, reply_to, text, sender_info=message.get("from", {}))
+            return
+
         logger.info(f"Commande Telegram reçue : '{text}'")
 
         if text.startswith("/start") or text.startswith("/help"):
@@ -162,6 +180,8 @@ class TelegramCommandHandler:
             self._cmd_status()
         elif text.startswith("/stats"):
             self._cmd_stats()
+        elif text.startswith("/annotations"):
+            self._cmd_annotations()
         elif text.startswith("/seuils"):
             self._cmd_seuils(text[7:].strip())
         elif text.startswith("/why"):
@@ -184,16 +204,28 @@ class TelegramCommandHandler:
             self._cmd_del(text[4:].strip())
 
     def _handle_callback_query(self, query: Dict[str, Any]):
-        """Gère les clics sur les boutons d'évaluation interactifs Telegram (Phase 2.5)."""
+        """Gère les clics sur les boutons d'évaluation interactifs Telegram et les motifs de rejet."""
         query_id = query.get("id")
         data = query.get("data", "")
         sender_info = query.get("from", {})
         user_name = sender_info.get("first_name", "Utilisateur")
 
+        # Cas 1 : Sous-menu de motif de défaut / rejet (flaw:TYPE:item_id)
+        if data.startswith("flaw:"):
+            parts = data.split(":")
+            if len(parts) >= 3:
+                flaw_type = parts[1]
+                try:
+                    item_id = int(parts[2])
+                    self._handle_flaw_selection(query, item_id, flaw_type, user_name)
+                except ValueError:
+                    pass
+            return
+
+        # Cas 2 : Boutons d'action principaux (fb:ACTION:item_id)
         if not data.startswith("fb:"):
             return
 
-        # Format: fb:classification:item_id
         parts = data.split(":")
         if len(parts) < 3:
             return
@@ -202,6 +234,11 @@ class TelegramCommandHandler:
         try:
             item_id = int(parts[2])
         except ValueError:
+            return
+
+        # Si Rejet : présenter les boutons de motifs pour l'entraînement IA Vision
+        if action_type == "reject":
+            self._prompt_reject_reasons(query, item_id)
             return
 
         classification = "UNKNOWN"
@@ -213,11 +250,7 @@ class TelegramCommandHandler:
         elif action_type == "wife_opinion":
             classification = "NEED_WIFE_OPINION"
             popup_text = "🤔 Enregistré comme 🟡 AVIS MAMA !"
-        elif action_type == "reject":
-            classification = "REJECTED"
-            popup_text = "❌ Enregistré comme 🔴 REJET !"
 
-        # Phase 2.5 : Mettre à jour la classification de la ligne sauvegardée
         if self.db_manager:
             self.db_manager.update_deal_feedback_classification(
                 item_id=item_id,
@@ -225,7 +258,6 @@ class TelegramCommandHandler:
                 evaluated_by=user_name
             )
 
-        # Répondre à Telegram avec la popup de confirmation
         try:
             requests.post(
                 f"{self.base_url}/answerCallbackQuery",
@@ -239,16 +271,19 @@ class TelegramCommandHandler:
         except Exception as e:
             logger.error(f"Erreur answerCallbackQuery: {e}")
 
-        # Modifier le message d'origine pour afficher l'évaluation choisie
+        # Modifier le message d'origine
         msg = query.get("message")
         if msg:
             chat_id = msg.get("chat", {}).get("id")
             message_id = msg.get("message_id")
             existing_caption = msg.get("caption") or msg.get("text") or ""
-            
-            # Ajouter le statut d'évaluation en bas de la caption
             eval_badge = f"\n\n✅ <b>ÉVALUATION REGISTRÉE :</b> {popup_text}"
             new_caption = existing_caption + eval_badge if eval_badge not in existing_caption else existing_caption
+
+            direct_url = f"https://www.vinted.fr/items/{item_id}"
+            single_markup = json.dumps({
+                "inline_keyboard": [[{"text": "⚡ OUVRIR DANS L'APPLI VINTED 🛍️", "url": direct_url}]]
+            })
 
             try:
                 if msg.get("photo"):
@@ -258,7 +293,8 @@ class TelegramCommandHandler:
                             "chat_id": chat_id,
                             "message_id": message_id,
                             "caption": new_caption,
-                            "parse_mode": "HTML"
+                            "parse_mode": "HTML",
+                            "reply_markup": single_markup
                         },
                         timeout=5
                     )
@@ -269,12 +305,264 @@ class TelegramCommandHandler:
                             "chat_id": chat_id,
                             "message_id": message_id,
                             "text": new_caption,
-                            "parse_mode": "HTML"
+                            "parse_mode": "HTML",
+                            "reply_markup": single_markup
                         },
                         timeout=5
                     )
             except Exception as e:
                 logger.error(f"Erreur mise a jour caption evaluation: {e}")
+
+    def _prompt_reject_reasons(self, query: Dict[str, Any], item_id: int):
+        """Affiche les sous-boutons de motifs détaillés pour enrichir l'IA Vision."""
+        query_id = query.get("id")
+        msg = query.get("message")
+        if not msg:
+            return
+
+        chat_id = msg.get("chat", {}).get("id")
+        message_id = msg.get("message_id")
+
+        reason_markup = json.dumps({
+            "inline_keyboard": [
+                [
+                    {"text": "🧵 Défaut / Abîmé / Tache", "callback_data": f"flaw:DEFECT:{item_id}"},
+                    {"text": "👗 Pas mon style", "callback_data": f"flaw:STYLE:{item_id}"}
+                ],
+                [
+                    {"text": "💸 Trop cher", "callback_data": f"flaw:PRICE:{item_id}"},
+                    {"text": "⚠️ Faux / Dupe", "callback_data": f"flaw:FAKE:{item_id}"}
+                ],
+                [
+                    {"text": "👶 Enfant", "callback_data": f"flaw:CHILD:{item_id}"},
+                    {"text": "↩️ Annuler", "callback_data": f"flaw:CANCEL:{item_id}"}
+                ]
+            ]
+        })
+
+        try:
+            requests.post(
+                f"{self.base_url}/answerCallbackQuery",
+                json={
+                    "callback_query_id": query_id,
+                    "text": "Précisez la raison du rejet 👇",
+                    "show_alert": False
+                },
+                timeout=5
+            )
+            requests.post(
+                f"{self.base_url}/editMessageReplyMarkup",
+                data={
+                    "chat_id": chat_id,
+                    "message_id": message_id,
+                    "reply_markup": reason_markup
+                },
+                timeout=5
+            )
+        except Exception as e:
+            logger.error(f"Erreur _prompt_reject_reasons: {e}")
+
+    def _handle_flaw_selection(self, query: Dict[str, Any], item_id: int, flaw_type: str, user_name: str):
+        """Enregistre le motif précis de rejet et archive photo + embedding pour l'IA."""
+        query_id = query.get("id")
+        msg = query.get("message")
+        if not msg:
+            return
+
+        chat_id = msg.get("chat", {}).get("id")
+        message_id = msg.get("message_id")
+        direct_url = f"https://www.vinted.fr/items/{item_id}"
+
+        # 1. Annulation : restaurer le clavier initial
+        if flaw_type == "CANCEL":
+            initial_markup = json.dumps({
+                "inline_keyboard": [
+                    [{"text": "⚡ OUVRIR DANS L'APPLI VINTED 🛍️", "url": direct_url}],
+                    [
+                        {"text": "🎯 🟢 MUST BUY", "callback_data": f"fb:must_buy:{item_id}"},
+                        {"text": "🤔 🟡 AVIS MAMA", "callback_data": f"fb:wife_opinion:{item_id}"},
+                        {"text": "❌ 🔴 REJET", "callback_data": f"fb:reject:{item_id}"}
+                    ]
+                ]
+            })
+            try:
+                requests.post(
+                    f"{self.base_url}/answerCallbackQuery",
+                    json={"callback_query_id": query_id, "text": "Action annulée", "show_alert": False},
+                    timeout=5
+                )
+                requests.post(
+                    f"{self.base_url}/editMessageReplyMarkup",
+                    data={"chat_id": chat_id, "message_id": message_id, "reply_markup": initial_markup},
+                    timeout=5
+                )
+            except Exception as e:
+                logger.error(f"Erreur annulation rejet: {e}")
+            return
+
+        # 2. Motif choisi : archiver et enregistrer en base
+        flaw_label = FLAW_LABELS.get(flaw_type, flaw_type)
+        self._archive_vision_data(item_id, msg, flaw_type, user_comment="", user_name=user_name)
+
+        if self.db_manager:
+            self.db_manager.update_deal_feedback_classification(
+                item_id=item_id,
+                classification="REJECTED",
+                evaluated_by=user_name
+            )
+
+        popup_text = f"✅ Rejet enregistré : {flaw_label}"
+        try:
+            requests.post(
+                f"{self.base_url}/answerCallbackQuery",
+                json={"callback_query_id": query_id, "text": popup_text, "show_alert": False},
+                timeout=5
+            )
+        except Exception as e:
+            logger.error(f"Erreur answerCallbackQuery flaw: {e}")
+
+        # Clavier final sans boutons d'action
+        single_markup = json.dumps({
+            "inline_keyboard": [[{"text": "⚡ OUVRIR DANS L'APPLI VINTED 🛍️", "url": direct_url}]]
+        })
+
+        existing_caption = msg.get("caption") or msg.get("text") or ""
+        badge = f"\n\n❌ <b>REJETÉ :</b> {flaw_label}\n🧠 <i>Photo et motif indexés pour l'apprentissage IA</i>"
+        new_caption = existing_caption + badge if badge not in existing_caption else existing_caption
+
+        try:
+            if msg.get("photo"):
+                requests.post(
+                    f"{self.base_url}/editMessageCaption",
+                    data={"chat_id": chat_id, "message_id": message_id, "caption": new_caption, "parse_mode": "HTML", "reply_markup": single_markup},
+                    timeout=5
+                )
+            else:
+                requests.post(
+                    f"{self.base_url}/editMessageText",
+                    data={"chat_id": chat_id, "message_id": message_id, "text": new_caption, "parse_mode": "HTML", "reply_markup": single_markup},
+                    timeout=5
+                )
+        except Exception as e:
+            logger.error(f"Erreur mise à jour caption flaw: {e}")
+
+    def _archive_vision_data(self, item_id: int, msg: Dict[str, Any], flaw_type: str, user_comment: str, user_name: str) -> bool:
+        """Télécharge la photo haute définition et préserve l'embedding pour l'entraînement."""
+        try:
+            img_dir = "data/vision_dataset/images"
+            emb_dir = "data/vision_dataset/embeddings"
+            os.makedirs(img_dir, exist_ok=True)
+            os.makedirs(emb_dir, exist_ok=True)
+
+            local_img_path = os.path.join(img_dir, f"{item_id}.jpg")
+            local_emb_path = os.path.join(emb_dir, f"{item_id}.npy")
+
+            photo_url = ""
+            photos = msg.get("photo") or []
+            if photos and not os.path.exists(local_img_path):
+                largest_photo = photos[-1]
+                file_id = largest_photo.get("file_id")
+                if file_id:
+                    file_res = requests.get(f"{self.base_url}/getFile?file_id={file_id}", timeout=5)
+                    if file_res.status_code == 200:
+                        file_path = file_res.json().get("result", {}).get("file_path")
+                        if file_path:
+                            dl_url = f"https://api.telegram.org/file/bot{self.bot_token}/{file_path}"
+                            img_data = requests.get(dl_url, timeout=10)
+                            if img_data.status_code == 200:
+                                with open(local_img_path, "wb") as f:
+                                    f.write(img_data.content)
+                                photo_url = dl_url
+
+            cache_emb_path = os.path.join("data/embeddings", f"{item_id}.npy")
+            cache_siglip = os.path.join("data/embeddings", "siglip", f"{item_id}.npy")
+            if not os.path.exists(local_emb_path):
+                if os.path.exists(cache_siglip):
+                    shutil.copyfile(cache_siglip, local_emb_path)
+                elif os.path.exists(cache_emb_path):
+                    shutil.copyfile(cache_emb_path, local_emb_path)
+
+            if self.db_manager:
+                self.db_manager.record_vision_annotation(
+                    item_id=item_id,
+                    flaw_type=flaw_type,
+                    user_comment=user_comment,
+                    photo_url=photo_url,
+                    local_image_path=local_img_path if os.path.exists(local_img_path) else "",
+                    embedding_path=local_emb_path if os.path.exists(local_emb_path) else "",
+                    annotated_by=user_name
+                )
+            return True
+        except Exception as e:
+            logger.error(f"Erreur _archive_vision_data: {e}")
+            return False
+
+    def _handle_reply_annotation(self, message: Dict[str, Any], reply_to: Dict[str, Any], text: str, sender_info: Dict[str, Any]):
+        """Traite une réponse par message texte (Reply) sur une alerte."""
+        user_name = sender_info.get("first_name", "Utilisateur")
+        caption_or_text = reply_to.get("caption") or reply_to.get("text") or ""
+
+        item_id = None
+        reply_markup = reply_to.get("reply_markup") or {}
+        for row in reply_markup.get("inline_keyboard", []):
+            for btn in row:
+                cb = btn.get("callback_data", "")
+                if ":" in cb:
+                    try:
+                        item_id = int(cb.split(":")[-1])
+                        break
+                    except ValueError:
+                        pass
+                url = btn.get("url", "")
+                if "/items/" in url:
+                    m = re.search(r'/items/(\d+)', url)
+                    if m:
+                        item_id = int(m.group(1))
+                        break
+            if item_id:
+                break
+
+        if not item_id and caption_or_text:
+            m = re.search(r'/items/(\d+)', caption_or_text)
+            if m:
+                item_id = int(m.group(1))
+
+        if not item_id:
+            logger.debug("Impossible d'extraire item_id du message reply_to")
+            return
+
+        t_low = text.lower()
+        if any(w in t_low for w in ["trou", "tache", "abim", "abîm", "dechir", "déchir", "semelle", "usé", "use", "effiloch", "rayur", "rayé", "sal", "défonc", "defonc", "cassé", "casse", "accroc"]):
+            flaw_type = "DEFECT"
+        elif any(w in t_low for w in ["style", "moche", "horrible", "ringard", "pas beau", "pas mon style", "laid", "bof", "pas rita"]):
+            flaw_type = "STYLE"
+        elif any(w in t_low for w in ["cher", "prix", "marge", "rentab", "trop cher", "euro"]):
+            flaw_type = "PRICE"
+        elif any(w in t_low for w in ["faux", "fake", "dupe", "copie", "contrefa", "imitation"]):
+            flaw_type = "FAKE"
+        elif any(w in t_low for w in ["enfant", "fille", "garçon", "garcon", "bébé", "bebe", "kid", "ans", "junior"]):
+            flaw_type = "CHILD"
+        else:
+            flaw_type = "DEFECT"
+
+        flaw_label = FLAW_LABELS.get(flaw_type, flaw_type)
+
+        self._archive_vision_data(item_id, reply_to, flaw_type, user_comment=text, user_name=user_name)
+
+        if self.db_manager:
+            self.db_manager.update_deal_feedback_classification(
+                item_id=item_id,
+                classification="REJECTED",
+                evaluated_by=user_name
+            )
+
+        self._reply(
+            f"🎯 <b>Annotation d'entraînement enregistrée !</b>\n\n"
+            f"📌 <b>Article :</b> <code>#{item_id}</code>\n"
+            f"🏷️ <b>Motif détecté :</b> {flaw_label}\n"
+            f"📝 <b>Votre note :</b> <i>\"{html.escape(text)}\"</i>\n\n"
+            f"🧠 <i>Photo HD et commentaire indexés pour le réentraînement de la vision.</i>"
+        )
 
     def _reply(self, text: str):
         try:
@@ -317,6 +605,7 @@ class TelegramCommandHandler:
             "⚡ <b>/on</b> : Activer le scan du bot\n"
             "⏸️ <b>/off</b> : Mettre le bot en pause\n"
             "📊 <b>/status</b> : Voir l'état du bot\n"
+            "📸 <b>/annotations</b> : Statistiques du dataset Vision IA\n"
             "💰 <b>/cout</b> : Suivi des tokens et coût IA du jour\n"
             "🌍 <b>/countries</b> : Voir ou modifier les pays Vinted surveillés\n"
             "📈 <b>/dataset</b> : Statistiques d'apprentissage Auto-Buy\n"
@@ -325,6 +614,32 @@ class TelegramCommandHandler:
             "   <i>Ex: /add Nike Tech | nike tech fleece | 40</i>\n"
             "🗑️ <b>/del NuméroOuNom</b> : Supprimer une recherche\n"
             "❓ <b>/help</b> : Afficher ce menu"
+        )
+        self._reply(msg)
+
+    def _cmd_annotations(self):
+        """Affiche les statistiques des annotations et retours enregistrés pour l'entraînement Vision."""
+        if not self.db_manager:
+            self._reply("❌ Base de données indisponible.")
+            return
+
+        stats = self.db_manager.get_vision_annotations_stats()
+        total = stats.get("TOTAL", 0)
+
+        img_dir = "data/vision_dataset/images"
+        nb_images = len(os.listdir(img_dir)) if os.path.exists(img_dir) else 0
+
+        msg = (
+            f"📸 <b>DATASET D'ENTRAÎNEMENT VISION IA</b>\n\n"
+            f"• <b>Total annotations enregistrées :</b> <b>{total}</b>\n"
+            f"• <b>Photos HD archivées en local :</b> <b>{nb_images}</b>\n\n"
+            f"<b>Répartition des motifs de rejet :</b>\n"
+            f"  🧵 Défauts visuels : <b>{stats.get('DEFECT', 0)}</b>\n"
+            f"  👗 Pas mon style : <b>{stats.get('STYLE', 0)}</b>\n"
+            f"  💸 Trop cher / Marge faible : <b>{stats.get('PRICE', 0)}</b>\n"
+            f"  ⚠️ Faux / Dupe : <b>{stats.get('FAKE', 0)}</b>\n"
+            f"  👶 Enfant : <b>{stats.get('CHILD', 0)}</b>\n\n"
+            f"💡 <i>Pour annoter : cliquez sur [❌ REJET] sous une alerte pour choisir le motif, ou répondez-y simplement par message texte !</i>"
         )
         self._reply(msg)
 

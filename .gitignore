@@ -40,3 +40,5 @@ vinted_check.png
 
 *.bak_*
 *.bak
+
+data/vision_dataset/

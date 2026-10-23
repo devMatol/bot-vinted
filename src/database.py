@@ -135,8 +135,30 @@ class DatabaseManager:
                 CREATE INDEX IF NOT EXISTS idx_token_usage_date ON token_usage(date_str)
             """)
 
+            # 5. Table d'apprentissage et d'annotation Vision IA (Photos & Motifs de rejet)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS vision_annotations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    item_id INTEGER,
+                    domain TEXT DEFAULT 'vinted.fr',
+                    flaw_type TEXT,
+                    user_comment TEXT DEFAULT '',
+                    photo_url TEXT DEFAULT '',
+                    local_image_path TEXT DEFAULT '',
+                    embedding_path TEXT DEFAULT '',
+                    annotated_by TEXT DEFAULT 'User',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_vision_annotations_item ON vision_annotations(item_id)
+            """)
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_vision_annotations_flaw ON vision_annotations(flaw_type)
+            """)
+
             conn.commit()
-        logger.info(f"Database initialisée sur '{self.db_path}' (tables seen_items, notified_items, deal_feedback, token_usage)")
+        logger.info(f"Database initialisée sur '{self.db_path}' (tables seen_items, notified_items, deal_feedback, token_usage, vision_annotations)")
 
     # --- SEEN ITEMS ---
 
@@ -396,6 +418,73 @@ class DatabaseManager:
             stats = {row[0]: row[1] for row in rows}
             cursor.execute("SELECT COUNT(*) FROM deal_feedback WHERE classification != 'ALERT_SENT'")
             stats["TOTAL"] = cursor.fetchone()[0]
+            return stats
+
+    # --- ANNOTATIONS VISION IA (APPRENTISSAGE ACTIF) ---
+
+    def record_vision_annotation(
+        self,
+        item_id: int,
+        flaw_type: str,
+        user_comment: str = "",
+        photo_url: str = "",
+        local_image_path: str = "",
+        embedding_path: str = "",
+        annotated_by: str = "User",
+        domain: str = "vinted.fr"
+    ) -> bool:
+        """Enregistre un motif d'évaluation / défaut visuel pour l'entraînement IA."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO vision_annotations
+                (item_id, domain, flaw_type, user_comment, photo_url, local_image_path, embedding_path, annotated_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (item_id, domain, flaw_type, user_comment, photo_url, local_image_path, embedding_path, annotated_by))
+            conn.commit()
+            logger.info(f"📸 Annotation vision enregistrée pour item #{item_id} : {flaw_type} ({annotated_by})")
+            return True
+
+    def get_vision_annotations(self, limit: int = 100, flaw_type: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Récupère les dernières annotations vision pour entraînement ou audit."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if flaw_type:
+                cursor.execute("""
+                    SELECT id, item_id, domain, flaw_type, user_comment, photo_url, local_image_path, embedding_path, annotated_by, created_at
+                    FROM vision_annotations
+                    WHERE flaw_type = ?
+                    ORDER BY id DESC LIMIT ?
+                """, (flaw_type, limit))
+            else:
+                cursor.execute("""
+                    SELECT id, item_id, domain, flaw_type, user_comment, photo_url, local_image_path, embedding_path, annotated_by, created_at
+                    FROM vision_annotations
+                    ORDER BY id DESC LIMIT ?
+                """, (limit,))
+            rows = cursor.fetchall()
+            return [
+                {
+                    "id": r[0], "item_id": r[1], "domain": r[2], "flaw_type": r[3],
+                    "user_comment": r[4], "photo_url": r[5], "local_image_path": r[6],
+                    "embedding_path": r[7], "annotated_by": r[8], "created_at": r[9]
+                }
+                for r in rows
+            ]
+
+    def get_vision_annotations_stats(self) -> Dict[str, Any]:
+        """Statistiques des annotations enregistrées par motif."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT flaw_type, COUNT(*) 
+                FROM vision_annotations 
+                GROUP BY flaw_type
+            """)
+            rows = cursor.fetchall()
+            stats = {r[0]: r[1] for r in rows}
+            cursor.execute("SELECT COUNT(*) FROM vision_annotations")
+            stats["TOTAL"] = cursor.fetchone()[0] or 0
             return stats
 
     # --- TOKEN USAGE & COÛTS GEMINI ---
