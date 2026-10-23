@@ -134,7 +134,8 @@ class FashionClipScorer:
         self.num_threads = int(self.config.get("clip_num_threads", 4))
         self.max_photos = int(self.config.get("clip_max_photos", 3))
         self.base_embeddings_dir = self.config.get("clip_embeddings_dir", "data/embeddings")
-        self.damage_threshold = float(self.config.get("clip_damage_threshold", 0.85))
+        self.damage_threshold = float(self.config.get("clip_damage_threshold", 0.55))
+        self.damage_malus_threshold = float(self.config.get("clip_damage_malus_threshold", 0.45))
         self.stock_photo_threshold = float(self.config.get("clip_stock_photo_threshold", 0.5))
         self.reject_proba_threshold = float(self.config.get("clip_reject_proba_threshold", 0.5))
         self.defect_words = [
