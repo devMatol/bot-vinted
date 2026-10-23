@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport de Backtest - Bot Vinted v2</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1, h2 { color: #38bdf8; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: #1e293b; padding: 18px; border-radius: 12px; border: 1px solid #334155; }
+        .card-val { font-size: 28px; font-weight: bold; margin-top: 8px; color: #f1f5f9; }
+        .card-sub { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; }
+        th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #94a3b8; font-weight: 600; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: 11px; }
+        .badge-success { background: #065f46; color: #34d399; }
+        .badge-warning { background: #854d0e; color: #fde047; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Rapport de Backtest — Bot Vinted v2 (Moteur Local)</h1>
+        <p style="color:#94a3b8">Généré le 23/10/2026 à 09:36:59 • Pipeline A-D sans dépendance Gemini</p>
+
+        <div class="grid">
+            <div class="card">
+                <div>Rappel Boutique</div>
+                <div class="card-val" style="color:#34d399">0.0 %</div>
+                <div class="card-sub">Articles validés (0/182)</div>
+            </div>
+            <div class="card">
+                <div>Taux d'alerte Marché</div>
+                <div class="card-val" style="color:#38bdf8">1.15 %</div>
+                <div class="card-sub">23 sur 2000 annonces</div>
+            </div>
+            <div class="card">
+                <div>Alertes / Heure estimées</div>
+                <div class="card-val" style="color:#fde047">3.4 / h</div>
+                <div class="card-sub">Base 300 annonces vues/h</div>
+            </div>
+            <div class="card">
+                <div>Erreur Médiane Revente</div>
+                <div class="card-val">11.00 €</div>
+                <div class="card-sub">Écart aux prix boutique</div>
+            </div>
+            <div class="card">
+                <div>Seuil Recommandé</div>
+                <div class="card-val" style="color:#a78bfa">85.0</div>
+                <div class="card-sub">final_min_score cible 5-15/h</div>
+            </div>
+        </div>
+
+        <h2>🟢 Top 15 Pépites Détectées</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th><th>Titre</th><th>Marque</th><th>Catégorie</th><th>Prix</th>
+                    <th>Revente</th><th>Marge</th><th>Multiple</th><th>Distinct</th><th>Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+        <tr>
+            <td>10457928164</td>
+            <td><b>Burberry Schaal</b></td>
+            <td>Burberry</td>
+            <td>accessoire</td>
+            <td>3.00 €</td>
+            <td>22.50 €</td>
+            <td><b style="color:#10b981">+15.16 €</b></td>
+            <td>3.1x</td>
+            <td>0.67</td>
+            <td><span class="badge badge-success">88.2</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459611776</td>
+            <td><b>Bobbina in velluto verde Gucci</b></td>
+            <td>Gucci</td>
+            <td>accessoire</td>
+            <td>10.00 €</td>
+            <td>45.00 €</td>
+            <td><b style="color:#10b981">+30.31 €</b></td>
+            <td>3.1x</td>
+            <td>0.64</td>
+            <td><span class="badge badge-success">87.3</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459640613</td>
+            <td><b>Amancio Prada - Caravel De Caraveles (LP)</b></td>
+            <td>Prada</td>
+            <td>veste</td>
+            <td>7.00 €</td>
+            <td>35.44 €</td>
+            <td><b style="color:#10b981">+23.90 €</b></td>
+            <td>3.1x</td>
+            <td>0.34</td>
+            <td><span class="badge badge-success">85.5</span></td>
+        </tr>
+        
+            </tbody>
+        </table>
+
+        <h2 style="margin-top: 36px">⚠️ Validations à Faible Distinctivité (Contrôle Humain)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th><th>Titre</th><th>Marque</th><th>Catégorie</th><th>Prix</th>
+                    <th>Revente</th><th>Marge</th><th>Multiple</th><th>Distinct</th><th>Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+        <tr>
+            <td>10460006149</td>
+            <td><b>stivali modello prada</b></td>
+            <td>Prada</td>
+            <td>bottes</td>
+            <td>15.00 €</td>
+            <td>55.75 €</td>
+            <td><b style="color:#10b981">+35.81 €</b></td>
+            <td>2.8x</td>
+            <td>0.23</td>
+            <td><span class="badge badge-warning">86.6</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459640613</td>
+            <td><b>Amancio Prada - Caravel De Caraveles (LP)</b></td>
+            <td>Prada</td>
+            <td>veste</td>
+            <td>7.00 €</td>
+            <td>35.44 €</td>
+            <td><b style="color:#10b981">+23.90 €</b></td>
+            <td>3.1x</td>
+            <td>0.34</td>
+            <td><span class="badge badge-warning">85.5</span></td>
+        </tr>
+        
+        <tr>
+            <td>10457515457</td>
+            <td><b>Abitino Max Mara in seta</b></td>
+            <td>Max Mara</td>
+            <td>robe</td>
+            <td>10.00 €</td>
+            <td>33.54 €</td>
+            <td><b style="color:#10b981">+18.85 €</b></td>
+            <td>2.3x</td>
+            <td>0.07</td>
+            <td><span class="badge badge-warning">80.1</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459320334</td>
+            <td><b>Giacca liu jo 50% lana vergine tg s</b></td>
+            <td>Liu Jo</td>
+            <td>veste</td>
+            <td>8.00 €</td>
+            <td>34.53 €</td>
+            <td><b style="color:#10b981">+21.94 €</b></td>
+            <td>2.7x</td>
+            <td>0.20</td>
+            <td><span class="badge badge-warning">78.5</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459239855</td>
+            <td><b>Schoenen</b></td>
+            <td>Patrizia Pepe</td>
+            <td>chaussures</td>
+            <td>8.00 €</td>
+            <td>31.35 €</td>
+            <td><b style="color:#10b981">+18.76 €</b></td>
+            <td>2.5x</td>
+            <td>0.32</td>
+            <td><span class="badge badge-warning">74.8</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459937980</td>
+            <td><b>Scarpe Max Mara 36</b></td>
+            <td>Max Mara</td>
+            <td>escarpins</td>
+            <td>10.00 €</td>
+            <td>43.19 €</td>
+            <td><b style="color:#10b981">+28.50 €</b></td>
+            <td>2.9x</td>
+            <td>0.23</td>
+            <td><span class="badge badge-warning">70.5</span></td>
+        </tr>
+        
+        <tr>
+            <td>10459190888</td>
+            <td><b>Scarpa Max Mara</b></td>
+            <td>Max Mara</td>
+            <td>escarpins</td>
+            <td>15.00 €</td>
+            <td>44.36 €</td>
+            <td><b style="color:#10b981">+24.42 €</b></td>
+            <td>2.2x</td>
+            <td>0.11</td>
+            <td><span class="badge badge-warning">70.0</span></td>
+        </tr>
+        
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

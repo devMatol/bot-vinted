@@ -1,0 +1,227 @@
+{
+  "burberry trench vintage": {
+    "de": "burberry trench vintage",
+    "it": "burberry trench vintage",
+    "es": "burberry trench vintage",
+    "nl": "burberry trench vintage",
+    "be": "burberry trench vintage",
+    "pt": "burberry trench vintage",
+    "at": "burberry trench vintage"
+  },
+  "burberry manteau laine": {
+    "de": "burberry wollmantel",
+    "es": "burberry abrigo lana",
+    "it": "cappotto lana burberry",
+    "nl": "burberry wollen jas",
+    "pt": "burberry casaco lã",
+    "at": "burberry wollmantel"
+  },
+  "burberry veste vintage": {
+    "it": "burberry giacca vintage",
+    "de": "burberry vintage jacke",
+    "es": "chupa burberry vintage",
+    "nl": "burberry vintage jas",
+    "pt": "burberry casaco vintage",
+    "at": "burberry vintage jacke"
+  },
+  "burberry pull": {
+    "it": "maglione burberry",
+    "de": "burberry pullover",
+    "es": "jersey burberry",
+    "pt": "burberry camisola",
+    "nl": "burberry trui"
+  },
+  "gucci veste vintage": {
+    "de": "gucci vintage jacke"
+  },
+  "d&g veste vintage": {
+    "it": "d&g giacca vintage",
+    "de": "d&g vintage jacke",
+    "nl": "d&g vintage jasje",
+    "pt": "d&g casaco vintage",
+    "at": "d&g vintage jacke",
+    "es": "d&g chaqueta vintage"
+  },
+  "gucci blazer": {
+    "at": "gucci blazer"
+  },
+  "prada veste vintage": {
+    "de": "prada vintage jacke",
+    "it": "giacca vintage prada",
+    "es": "chaqueta vintage de prada",
+    "nl": "prada vintage jas",
+    "pt": "prada casaco vintage",
+    "at": "prada vintage jacke"
+  },
+  "prada pull vintage": {
+    "it": "maglione prada vintage",
+    "de": "prada pullover vintage",
+    "es": "prada jersey vintage",
+    "nl": "prada truien vintage"
+  },
+  "versace veste vintage": {
+    "it": "versace giacca vintage",
+    "de": "versace vintage jacke",
+    "es": "versace chaqueta vintage",
+    "nl": "versace jas vintage",
+    "pt": "versace casaco vintage",
+    "at": "versace vintage jacke"
+  },
+  "versace pull": {
+    "de": "versace pullover",
+    "es": "jersey versace",
+    "it": "versace maglione",
+    "nl": "versace trui",
+    "pt": "versace camisola",
+    "at": "versace pullover"
+  },
+  "max mara manteau laine": {
+    "it": "max mara cappotto lana",
+    "de": "max mara wollmantel",
+    "es": "max mara abrigo lana",
+    "pt": "max mara casaco lã",
+    "nl": "max mara wollen jas"
+  },
+  "max mara pull cachemire": {
+    "nl": "max mara kasjmier trui",
+    "pt": "max mara camisola caxemira",
+    "at": "max mara kaschmir pullover"
+  },
+  "loro piana pull cachemire": {
+    "it": "loro piana maglione cashmere",
+    "de": "loro piana kaschmir pullover",
+    "es": "loro piana jersey cachemira",
+    "nl": "loro piana kasjmier trui",
+    "pt": "loro piana camisola caxemira",
+    "at": "loro piana kaschmir pullover"
+  },
+  "ysl blazer": {
+    "it": "ysl blazer",
+    "de": "ysl blazer",
+    "es": "ysl blazer",
+    "pt": "ysl blazer",
+    "at": "ysl blazer",
+    "nl": "ysl blazer"
+  },
+  "ysl rive gauche veste": {
+    "it": "ysl rive gauche giacca",
+    "de": "ysl rive gauche jacke",
+    "pt": "ysl rive gauche casaco",
+    "at": "ysl rive gauche jacke",
+    "es": "ysl rive gauche chaqueta",
+    "nl": "ysl rive gauche jas"
+  },
+  "ysl veste vintage": {
+    "it": "ysl giacca vintage",
+    "es": "ysl chaqueta vintage",
+    "nl": "ysl vintage jas",
+    "de": "ysl vintage jacke",
+    "pt": "ysl casaco vintage",
+    "at": "ysl vintage jacke"
+  },
+  "ysl pull": {
+    "es": "ysl jersey",
+    "it": "ysl maglione",
+    "de": "ysl pullover",
+    "nl": "ysl trui",
+    "at": "ysl pullover",
+    "pt": "ysl camisola"
+  },
+  "dior veste vintage": {
+    "at": "dior vintage jacke"
+  },
+  "dior pull": {
+    "de": "dior pullover",
+    "nl": "dior trui",
+    "es": "dior jersey",
+    "pt": "dior camisola",
+    "at": "dior pullover"
+  },
+  "dior foulard soie": {
+    "es": "dior pañuelo seda",
+    "it": "dior foulard seta",
+    "nl": "dior zijden sjaal",
+    "de": "dior seidentuch",
+    "pt": "dior lenço seda",
+    "at": "dior seidentuch"
+  },
+  "jean paul gaultier maille": {
+    "it": "jean paul gaultier maglia",
+    "es": "jean paul gaultier maille",
+    "de": "jean paul gaultier maille",
+    "nl": "jean paul gaultier maille"
+  },
+  "jean paul gaultier veste vintage": {
+    "es": "chaqueta vintage de jean paul gaultier",
+    "nl": "jean paul gaultier vintage jas",
+    "pt": "jean paul gaultier casaco vintage",
+    "at": "jean paul gaultier vintage jacke"
+  },
+  "mugler veste vintage": {
+    "de": "mugler vintage jacke",
+    "it": "mugler giacca vintage",
+    "es": "mugler chaqueta vintage",
+    "pt": "mugler casaco vintage",
+    "nl": "mugler vintage jas",
+    "at": "mugler vintage jacke"
+  },
+  "mugler veste structurée": {
+    "de": "mugler strukturierte jacke",
+    "es": "mugler chaqueta estructurada",
+    "it": "mugler giacca strutturata",
+    "nl": "mugler gestructureerd jasje",
+    "at": "mugler strukturierte jacke",
+    "pt": "mugler casaco estruturado"
+  },
+  "celine veste vintage": {
+    "at": "celine vintage jacke"
+  },
+  "kenzo pull vintage": {
+    "de": "kenzo pullover vintage",
+    "es": "kenzo jersey vintage",
+    "nl": "kenzo trui vintage",
+    "pt": "kenzo camisola vintage",
+    "at": "kenzo pullover vintage"
+  },
+  "ralph lauren manteau laine": {
+    "de": "ralph lauren wollmantel",
+    "es": "ralph lauren abrigo lana",
+    "nl": "ralph lauren wollen jas",
+    "it": "ralph lauren cappotto lana",
+    "at": "ralph lauren wollmantel",
+    "pt": "ralph lauren casaco de lã"
+  },
+  "ralph lauren pull laine": {
+    "de": "ralph lauren wollpullover",
+    "es": "ralph lauren jersey lana",
+    "pt": "ralph lauren camisola lã",
+    "nl": "ralph lauren wollen trui",
+    "it": "ralph lauren maglione lana"
+  },
+  "schott cuir vintage": {
+    "it": "schott pelle vintage"
+  },
+  "roberto cavalli veste vintage": {
+    "it": "roberto cavalli giacca vintage",
+    "es": "roberto cavalli chaqueta vintage",
+    "pt": "roberto cavalli casaco vintage",
+    "de": "roberto cavalli vintage jacke",
+    "at": "roberto cavalli jacke vintage",
+    "nl": "roberto cavalli jas vintage"
+  },
+  "roberto cavalli robe vintage": {
+    "de": "roberto cavalli vintage kleid",
+    "it": "roberto cavalli abito vintage",
+    "es": "roberto cavalli vestido vintage",
+    "nl": "roberto cavalli jurk vintage",
+    "pt": "roberto cavalli vestido vintage",
+    "at": "roberto cavalli kleid vintage"
+  },
+  "roberto cavalli pull": {
+    "it": "roberto cavalli maglione",
+    "es": "roberto cavalli jersey",
+    "pt": "roberto cavalli camisola",
+    "de": "roberto cavalli pullover",
+    "nl": "roberto cavalli trui"
+  }
+}

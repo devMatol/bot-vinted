@@ -1,0 +1,3 @@
+"""
+Vinted Sniper Bot Package
+"""

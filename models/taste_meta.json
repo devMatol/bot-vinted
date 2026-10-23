@@ -1,0 +1,116 @@
+{
+  "trained_at": "2026-10-23T09:18:37.280213",
+  "vision_model": "hf-hub:Marqo/marqo-fashionSigLIP",
+  "n_samples": 2192,
+  "n_positives": 550,
+  "n_negatives": 1642,
+  "auc": 0.9598,
+  "precision_at_10pct": 0.9772,
+  "valid": true,
+  "best_c": 3.0,
+  "calibration_method": "isotonic",
+  "categories_breakdown": {
+    "accessoire": {
+      "count": 21,
+      "positives": 17,
+      "auc": 0.75,
+      "precision_at_10": 1.0
+    },
+    "bottes": {
+      "count": 73,
+      "positives": 68,
+      "auc": 0.8765,
+      "precision_at_10": 1.0
+    },
+    "chaussures": {
+      "count": 79,
+      "positives": 43,
+      "auc": 0.905,
+      "precision_at_10": 1.0
+    },
+    "chemise_blouse": {
+      "count": 136,
+      "positives": 16,
+      "auc": 0.9172,
+      "precision_at_10": 0.8462
+    },
+    "inconnu": {
+      "count": 223,
+      "positives": 101,
+      "auc": 0.943,
+      "precision_at_10": 1.0
+    },
+    "jean": {
+      "count": 192,
+      "positives": 12,
+      "auc": 0.9657,
+      "precision_at_10": 0.5263
+    },
+    "jupe": {
+      "count": 50,
+      "positives": 24,
+      "auc": 0.8542,
+      "precision_at_10": 1.0
+    },
+    "manteau": {
+      "count": 313,
+      "positives": 17,
+      "auc": 0.9289,
+      "precision_at_10": 0.4194
+    },
+    "manteau_fourrure": {
+      "count": 260,
+      "positives": 13,
+      "auc": 0.9452,
+      "precision_at_10": 0.3462
+    },
+    "pantalon": {
+      "count": 87,
+      "positives": 19,
+      "auc": 0.9745,
+      "precision_at_10": 1.0
+    },
+    "pull_maille": {
+      "count": 147,
+      "positives": 34,
+      "auc": 0.9149,
+      "precision_at_10": 0.9286
+    },
+    "robe": {
+      "count": 59,
+      "positives": 28,
+      "auc": 0.9585,
+      "precision_at_10": 1.0
+    },
+    "sac": {
+      "count": 110,
+      "positives": 15,
+      "auc": 0.9719,
+      "precision_at_10": 0.7273
+    },
+    "sweat": {
+      "count": 55,
+      "positives": 5,
+      "auc": 0.876,
+      "precision_at_10": 0.4
+    },
+    "top": {
+      "count": 57,
+      "positives": 32,
+      "auc": 0.905,
+      "precision_at_10": 1.0
+    },
+    "tshirt": {
+      "count": 192,
+      "positives": 21,
+      "auc": 0.9602,
+      "precision_at_10": 0.7368
+    },
+    "veste": {
+      "count": 93,
+      "positives": 65,
+      "auc": 0.972,
+      "precision_at_10": 1.0
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "valid": true,
+  "trained_at": "2026-10-22T21:35:38.699445",
+  "n_samples": 537,
+  "global_mae_q30_eur": 7.73,
+  "global_mae_q50_eur": 8.08,
+  "category_mae_eur": {
+    "accessoire": 8.43,
+    "blazer": 6.76,
+    "bottes": 8.52,
+    "chaussures": 8.39,
+    "chemise_blouse": 7.27,
+    "escarpins": 21.65,
+    "inconnu": 11.92,
+    "jean": 3.34,
+    "jupe": 5.91,
+    "manteau": 12.15,
+    "pantalon": 10.02,
+    "pull_maille": 4.85,
+    "robe": 7.9,
+    "sac": 10.4,
+    "short": 3.94,
+    "top": 4.14,
+    "tshirt": 7.34,
+    "veste": 12.63
+  },
+  "n_pca_components": 32,
+  "clip_labels_version": "v2_marqo_fashionclip"
+}

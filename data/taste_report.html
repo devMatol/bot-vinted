@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport Modèle de Goût Rita</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 24px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1, h2 { color: #38bdf8; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: #1e293b; padding: 18px; border-radius: 12px; border: 1px solid #334155; }
+        .card-val { font-size: 26px; font-weight: bold; margin-top: 8px; color: #f1f5f9; }
+        .card-sub { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; background: #1e293b; border-radius: 8px; overflow: hidden; font-size: 13px; }
+        th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #334155; vertical-align: middle; }
+        th { background: #0f172a; color: #94a3b8; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👗 Modèle de Goût "Rita" — Rapport de Calibration</h1>
+        <p style="color:#94a3b8">Généré le 23/10/2026 à 09:18:54 • Apprentissage sur favoris, ventes réelles et rejets</p>
+
+        <div class="grid">
+            <div class="card">
+                <div>AUC Validation Croisée</div>
+                <div class="card-val" style="color:#34d399">0.960</div>
+                <div class="card-sub">Modèle Valide (>= 0.70)</div>
+            </div>
+            <div class="card">
+                <div>Précision @ 10 %</div>
+                <div class="card-val" style="color:#38bdf8">97.7 %</div>
+                <div class="card-sub">Positifs dans le top 10 %</div>
+            </div>
+            <div class="card">
+                <div>Échantillons</div>
+                <div class="card-val">2192</div>
+                <div class="card-sub">550 positifs, 1642 négatifs</div>
+            </div>
+            <div class="card">
+                <div>Paramètre C optimal</div>
+                <div class="card-val" style="color:#a78bfa">3.0</div>
+                <div class="card-sub">Régularisation L2</div>
+            </div>
+        </div>
+
+        <h2>🟢 Top 20 Annonces Marché les Mieux Notées (Goût Fort)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Photo</th><th>ID</th><th>Titre</th><th>Marque</th><th>Catégorie</th><th>Prix</th><th>Score Goût</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td style="width:60px;"><img src="../images/favoris/10485175162_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10485175162</td>
+                <td><b>Vintage Burberry Top</b></td>
+                <td>Burberry</td>
+                <td>top</td>
+                <td>5.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">99.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10458214283_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10458214283</td>
+                <td><b>Botas camperas / cowboy de ante en color</b></td>
+                <td>Miu Miu</td>
+                <td>bottes</td>
+                <td>12.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">96.5 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10458681408_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10458681408</td>
+                <td><b>Foulard</b></td>
+                <td>Moschino</td>
+                <td>accessoire</td>
+                <td>10.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">96.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10459863091_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10459863091</td>
+                <td><b>Mules pretas gucci</b></td>
+                <td>Gucci</td>
+                <td>chaussures</td>
+                <td>20.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">96.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/favoris/10480165546_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10480165546</td>
+                <td><b>Dolce &amp; Gabbana outerwear fleece jac</b></td>
+                <td>Dolce & Gabbana</td>
+                <td>veste</td>
+                <td>10.50 €</td>
+                <td><b style="color:#34d399; font-size:15px;">95.8 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10471694623_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10471694623</td>
+                <td><b>Kleed</b></td>
+                <td>Liu Jo</td>
+                <td>inconnu</td>
+                <td>10.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">94.9 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/favoris/10484538505_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10484538505</td>
+                <td><b>Veste</b></td>
+                <td>Versace</td>
+                <td>veste</td>
+                <td>10.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">94.9 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10486358142_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10486358142</td>
+                <td><b>Stivale gucci</b></td>
+                <td>Gucci</td>
+                <td>bottes</td>
+                <td>40.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">94.9 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10463138715_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10463138715</td>
+                <td><b>Collant a rete cioccolato Max Mara</b></td>
+                <td>Max Mara</td>
+                <td>inconnu</td>
+                <td>13.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">92.1 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/favoris/10450197882_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10450197882</td>
+                <td><b>Maglioncino leggero vintage</b></td>
+                <td>Versace</td>
+                <td>inconnu</td>
+                <td>9.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">88.9 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10466800849_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10466800849</td>
+                <td><b>Completo gonna lunga 40 giacca lunga55 s</b></td>
+                <td>Max Mara</td>
+                <td>veste</td>
+                <td>13.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">86.5 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10463354373_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10463354373</td>
+                <td><b>Canottiera Versace</b></td>
+                <td>Versace</td>
+                <td>top</td>
+                <td>7.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">80.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10473230170_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10473230170</td>
+                <td><b>Top leggero finiture pizzo</b></td>
+                <td>Armani</td>
+                <td>top</td>
+                <td>8.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">80.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487236405_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487236405</td>
+                <td><b>Armani Leder Gürtel</b></td>
+                <td>Armani</td>
+                <td>accessoire</td>
+                <td>8.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">79.9 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10466361757_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10466361757</td>
+                <td><b>Liu jo</b></td>
+                <td>Liu Jo</td>
+                <td>inconnu</td>
+                <td>10.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">75.4 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10464139310_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10464139310</td>
+                <td><b>2 serviettes de bain</b></td>
+                <td>Yves Saint Laurent</td>
+                <td>inconnu</td>
+                <td>15.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">74.8 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10463919506_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10463919506</td>
+                <td><b>ballerine in vernice</b></td>
+                <td>Prada</td>
+                <td>chaussures</td>
+                <td>25.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">73.8 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10474172500_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10474172500</td>
+                <td><b>Burberry top</b></td>
+                <td>Burberry</td>
+                <td>top</td>
+                <td>5.99 €</td>
+                <td><b style="color:#34d399; font-size:15px;">72.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10464350876_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10464350876</td>
+                <td><b>Vestido Liu Jeans M</b></td>
+                <td>Liu Jo</td>
+                <td>robe</td>
+                <td>4.50 €</td>
+                <td><b style="color:#34d399; font-size:15px;">70.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10481282720_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10481282720</td>
+                <td><b>Pantalone cargo Liu Jo</b></td>
+                <td>Liu Jo</td>
+                <td>pantalon</td>
+                <td>7.00 €</td>
+                <td><b style="color:#34d399; font-size:15px;">69.9 %</b></td>
+            </tr>
+            
+            </tbody>
+        </table>
+
+        <h2 style="margin-top: 40px">🔴 Bottom 20 Annonces Marché les Moins Bien Notées (Rejet)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Photo</th><th>ID</th><th>Titre</th><th>Marque</th><th>Catégorie</th><th>Prix</th><th>Score Goût</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489540678_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489540678</td>
+                <td><b>Manteau long camel oversize femme</b></td>
+                <td>Shein Curve</td>
+                <td>manteau</td>
+                <td>5.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489539533_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489539533</td>
+                <td><b>Versace Jeans V-Ausschnitt Shirt Langarm</b></td>
+                <td>Versace</td>
+                <td>chemise_blouse</td>
+                <td>12.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489417038_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489417038</td>
+                <td><b>Diesel Shirt</b></td>
+                <td>Diesel</td>
+                <td>chemise_blouse</td>
+                <td>4.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489343262_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489343262</td>
+                <td><b>Emporio Armani t-shirt</b></td>
+                <td>Armani</td>
+                <td>tshirt</td>
+                <td>6.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489290480_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489290480</td>
+                <td><b>Camiseta EA7</b></td>
+                <td>Armani</td>
+                <td>tshirt</td>
+                <td>5.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489234164_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489234164</td>
+                <td><b>Veste mi-longue d&#x27;hiver avec capuch</b></td>
+                <td>Jacqueline De Yong</td>
+                <td>manteau_fourrure</td>
+                <td>15.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10489069900_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10489069900</td>
+                <td><b>Camicia Diesel XL</b></td>
+                <td>Diesel</td>
+                <td>chemise_blouse</td>
+                <td>9.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10488731897_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10488731897</td>
+                <td><b>Manteau</b></td>
+                <td>Eldys</td>
+                <td>manteau</td>
+                <td>12.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10488676650_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10488676650</td>
+                <td><b>Gilet di pelliccia</b></td>
+                <td>Haveone</td>
+                <td>manteau_fourrure</td>
+                <td>5.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10488291544_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10488291544</td>
+                <td><b>Cappotto pelliccia donna</b></td>
+                <td>Sans marque</td>
+                <td>manteau_fourrure</td>
+                <td>15.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10488193594_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10488193594</td>
+                <td><b>Manteau femme Latidelo taille 46 FR – Ma</b></td>
+                <td>Latidelo</td>
+                <td>manteau_fourrure</td>
+                <td>15.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10488023184_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10488023184</td>
+                <td><b>Doudoune deelux fourrure</b></td>
+                <td>Deeluxe</td>
+                <td>manteau_fourrure</td>
+                <td>8.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487639448_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487639448</td>
+                <td><b>EA7 Joggers</b></td>
+                <td>Armani</td>
+                <td>pantalon</td>
+                <td>7.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487631412_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487631412</td>
+                <td><b>Manteau fourrure kaki</b></td>
+                <td>Only</td>
+                <td>manteau_fourrure</td>
+                <td>10.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487621941_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487621941</td>
+                <td><b>Manteau au niveau des genoux</b></td>
+                <td>Gas</td>
+                <td>manteau</td>
+                <td>13.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487327694_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487327694</td>
+                <td><b>Jeans diesel femme</b></td>
+                <td>Diesel</td>
+                <td>jean</td>
+                <td>6.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487164309_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487164309</td>
+                <td><b>Diesel Tshirt</b></td>
+                <td>Diesel</td>
+                <td>tshirt</td>
+                <td>5.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10487084623_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10487084623</td>
+                <td><b>Zainetto con pelliccia</b></td>
+                <td>Pull & Bear</td>
+                <td>manteau_fourrure</td>
+                <td>6.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10486966835_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10486966835</td>
+                <td><b>Manteau 3/4 Femme</b></td>
+                <td>Ciminy</td>
+                <td>manteau</td>
+                <td>13.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            <tr>
+                <td style="width:60px;"><img src="../images/market/10486909394_0.jpg" width="50" height="65" style="object-fit:cover; border-radius:4px;" /></td>
+                <td>10486909394</td>
+                <td><b>Manteau chaud taille M beige</b></td>
+                <td>Sans marque</td>
+                <td>manteau</td>
+                <td>10.00 €</td>
+                <td><b style="color:#f87171; font-size:15px;">0.0 %</b></td>
+            </tr>
+            
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

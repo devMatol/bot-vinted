@@ -1,0 +1,531 @@
+[
+  {
+    "id": "y2k_miumiu",
+    "enabled": true,
+    "name": "💎 [Y2K] Miu Miu",
+    "search_text": "miu miu",
+    "brand": "Miu Miu",
+    "brand_variants": [
+      "miu miu"
+    ],
+    "min_price": 10,
+    "max_price": 45,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_dior",
+    "enabled": true,
+    "name": "💎 [Y2K] Dior",
+    "search_text": "dior y2k",
+    "brand": "Christian Dior",
+    "brand_variants": [
+      "dior",
+      "christian dior"
+    ],
+    "min_price": 10,
+    "max_price": 45,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids",
+      "parfum",
+      "rouge à lèvres",
+      "maquillage"
+    ]
+  },
+  {
+    "id": "y2k_fendi",
+    "enabled": true,
+    "name": "💎 [Y2K] Fendi",
+    "search_text": "fendi",
+    "brand": "Fendi",
+    "brand_variants": [
+      "fendi"
+    ],
+    "min_price": 10,
+    "max_price": 45,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_gucci",
+    "enabled": true,
+    "name": "💎 [Y2K] Gucci",
+    "search_text": "gucci y2k",
+    "brand": "Gucci",
+    "brand_variants": [
+      "gucci"
+    ],
+    "min_price": 10,
+    "max_price": 40,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_prada",
+    "enabled": true,
+    "name": "💎 [Y2K] Prada",
+    "search_text": "prada",
+    "brand": "Prada",
+    "brand_variants": [
+      "prada"
+    ],
+    "min_price": 10,
+    "max_price": 35,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_cavalli",
+    "enabled": true,
+    "name": "🐆 [Y2K] Cavalli",
+    "search_text": "cavalli",
+    "brand": "Roberto Cavalli",
+    "brand_variants": [
+      "cavalli",
+      "roberto cavalli",
+      "just cavalli",
+      "class roberto cavalli"
+    ],
+    "min_price": 6,
+    "max_price": 25,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_dg",
+    "enabled": true,
+    "name": "🐆 [Y2K] Dolce & Gabbana",
+    "search_text": "dolce gabbana",
+    "brand": "Dolce & Gabbana",
+    "brand_variants": [
+      "dolce",
+      "d&g",
+      "dolce & gabbana",
+      "dolce&gabbana"
+    ],
+    "min_price": 6,
+    "max_price": 30,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_versace",
+    "enabled": true,
+    "name": "🐆 [Y2K] Versace",
+    "search_text": "versace",
+    "brand": "Versace",
+    "brand_variants": [
+      "versace",
+      "versus"
+    ],
+    "min_price": 6,
+    "max_price": 30,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_moschino",
+    "enabled": true,
+    "name": "🐆 [Y2K] Moschino",
+    "search_text": "moschino",
+    "brand": "Moschino",
+    "brand_variants": [
+      "moschino"
+    ],
+    "min_price": 6,
+    "max_price": 25,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_gaultier",
+    "enabled": true,
+    "name": "🐆 [Y2K] Jean Paul Gaultier",
+    "search_text": "gaultier",
+    "brand": "Jean Paul Gaultier",
+    "brand_variants": [
+      "gaultier",
+      "jean paul gaultier",
+      "jpg"
+    ],
+    "min_price": 8,
+    "max_price": 35,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_mugler",
+    "enabled": true,
+    "name": "🐆 [Y2K] Mugler",
+    "search_text": "mugler",
+    "brand": "Thierry Mugler",
+    "brand_variants": [
+      "mugler"
+    ],
+    "min_price": 10,
+    "max_price": 40,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids",
+      "parfum",
+      "angel",
+      "alien"
+    ]
+  },
+  {
+    "id": "y2k_blumarine",
+    "enabled": true,
+    "name": "🦋 [Y2K] Blumarine",
+    "search_text": "blumarine",
+    "brand": "Blumarine",
+    "brand_variants": [
+      "blumarine",
+      "blugirl"
+    ],
+    "min_price": 6,
+    "max_price": 30,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_westwood",
+    "enabled": true,
+    "name": "🦋 [Y2K] Vivienne Westwood",
+    "search_text": "vivienne westwood",
+    "brand": "Vivienne Westwood",
+    "brand_variants": [
+      "westwood"
+    ],
+    "min_price": 8,
+    "max_price": 35,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_burberry",
+    "enabled": true,
+    "name": "🦋 [Y2K] Burberry nova check",
+    "search_text": "burberry nova check",
+    "brand": "Burberry",
+    "brand_variants": [
+      "burberry"
+    ],
+    "min_price": 6,
+    "max_price": 25,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids",
+      "écharpe",
+      "echarpe",
+      "cravate",
+      "polo"
+    ]
+  },
+  {
+    "id": "y2k_diesel",
+    "enabled": true,
+    "name": "🔥 [Branché] Diesel",
+    "search_text": "diesel y2k",
+    "brand": "Diesel",
+    "brand_variants": [
+      "diesel"
+    ],
+    "min_price": 5,
+    "max_price": 20,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "y2k_misssixty",
+    "enabled": true,
+    "name": "🔥 [Branché] Miss Sixty",
+    "search_text": "miss sixty",
+    "brand": "Miss Sixty",
+    "brand_variants": [
+      "miss sixty"
+    ],
+    "min_price": 5,
+    "max_price": 18,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ]
+  },
+  {
+    "id": "mt_mesh",
+    "enabled": true,
+    "name": "🎯 [Mal titré] top mesh imprimé",
+    "search_text": "top mesh imprimé",
+    "min_price": 3,
+    "max_price": 12,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ],
+    "category": "mal_titrees"
+  },
+  {
+    "id": "mt_satin",
+    "enabled": true,
+    "name": "🎯 [Mal titré] jupe satin",
+    "search_text": "jupe satin années 2000",
+    "min_price": 3,
+    "max_price": 12,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ],
+    "category": "mal_titrees"
+  },
+  {
+    "id": "mt_monogram",
+    "enabled": true,
+    "name": "🎯 [Mal titré] monogramme",
+    "search_text": "imprimé monogramme",
+    "min_price": 4,
+    "max_price": 15,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ],
+    "category": "mal_titrees"
+  },
+  {
+    "id": "mt_lot",
+    "enabled": true,
+    "name": "🎯 [Mal titré] lot y2k",
+    "search_text": "lot vêtements y2k",
+    "min_price": 5,
+    "max_price": 25,
+    "min_favourites": 0,
+    "min_seller_rating": 4.0,
+    "currency": "EUR",
+    "exclude_keywords": [
+      "fake",
+      "imitation",
+      "copie",
+      "replica",
+      "dupe",
+      "style",
+      "inspiré",
+      "enfant",
+      "kids"
+    ],
+    "category": "mal_titrees"
+  }
+]
