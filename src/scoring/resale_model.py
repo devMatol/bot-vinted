@@ -465,16 +465,18 @@ def estimate_resale_price(
     elif tier >= 1.5 and cap_price < 55.0:
         cap_price = 55.0
 
+    if has_live_market and live_market:
+        cap_price = max(cap_price, float(live_market.get("p75_price", 0.0)))
+
+    revente_cible = round(max(8.0, min(revente_brute, cap_price)), 2)
+
     # 5. Scénarios (Pessimiste / Vente flash vs Optimiste / Haut de panier)
     if has_live_market and live_market:
         revente_pessimiste = round(float(live_market.get("p25_price", revente_cible * 0.78)), 2)
         revente_optimiste = round(float(live_market.get("p75_price", revente_cible * 1.22)), 2)
-        cap_price = max(cap_price, revente_optimiste)
     else:
         revente_pessimiste = round(revente_cible * 0.78, 2)  # -22% vente flash
         revente_optimiste = round(revente_cible * 1.22, 2)   # +22% acheteur coup de cœur
-
-    revente_cible = round(max(8.0, min(revente_brute, cap_price)), 2)
 
     # 6. Décote de négociation acheteur Vinted pour la revente nette
     nego_discount = float(cfg.get("resale_negotiation_discount", 0.12))
