@@ -327,7 +327,7 @@ class TelegramCommandHandler:
                 logger.error(f"Erreur mise a jour caption evaluation: {e}")
 
     def _handle_authenticity_check(self, query: Dict[str, Any], item_id: int):
-        """Lance l'expertise d'authenticité (Legit Check) en tâche de fond pour ne pas bloquer Telegram."""
+        """Lance l'expertise d'authenticité (Legit Check) multi-photos en tâche de fond pour ne pas bloquer Telegram."""
         query_id = query.get("id")
         msg = query.get("message") or {}
         chat_id = msg.get("chat", {}).get("id") or self.chat_id
@@ -339,7 +339,7 @@ class TelegramCommandHandler:
                     f"{self.base_url}/answerCallbackQuery",
                     json={
                         "callback_query_id": query_id,
-                        "text": "🔍 Analyse d'authenticité lancée avec Gemini...",
+                        "text": "🔍 Analyse d'authenticité multi-photos en cours...",
                         "show_alert": False
                     },
                     timeout=5
@@ -349,7 +349,16 @@ class TelegramCommandHandler:
 
         def worker():
             try:
+                # Afficher le statut 'en train d'écrire' immédiatement
+                try:
+                    requests.post(f"{self.base_url}/sendChatAction", json={"chat_id": chat_id, "action": "typing"}, timeout=3)
+                except Exception:
+                    pass
+
                 item_data = None
+                photo_urls: List[str] = []
+                domain = "vinted.fr"
+
                 if self.db_manager:
                     with self.db_manager._get_connection() as conn:
                         c = conn.cursor()
@@ -359,6 +368,16 @@ class TelegramCommandHandler:
                         """, (item_id,))
                         row = c.fetchone()
                         if row:
+                            domain = row[7] or "vinted.fr"
+                            raw_p = row[6] or "[]"
+                            if isinstance(raw_p, str):
+                                try:
+                                    photo_urls = json.loads(raw_p)
+                                except Exception:
+                                    photo_urls = []
+                            elif isinstance(raw_p, list):
+                                photo_urls = raw_p
+
                             item_data = {
                                 "id": item_id,
                                 "title": row[0] or "",
@@ -366,11 +385,49 @@ class TelegramCommandHandler:
                                 "price": row[2] or 0.0,
                                 "condition": row[3] or "",
                                 "description": row[5] or "",
-                                "photo_urls": row[6] or "[]",
-                                "domain": row[7] or "vinted.fr"
+                                "photo_urls": photo_urls,
+                                "domain": domain
                             }
 
-                if not item_data:
+                # Si l'annonce n'est pas en base ou si elle contient <= 1 photo :
+                # Extraction ultra-rapide (< 1.5s) de la galerie complète de photos HD et des infos directement depuis Vinted
+                if len(photo_urls) <= 1:
+                    try:
+                        from src.auth import VintedSessionManager
+                        v_mgr = VintedSessionManager(domain=domain)
+                        v_sess = v_mgr.get_session()
+                        v_url = f"https://www.{domain}/items/{item_id}"
+                        resp = v_sess.get(v_url, timeout=8)
+                        if resp.status_code == 200:
+                            all_imgs = re.findall(r'https://images1\.vinted\.net/t/[^"\'\s<>\\]+\?[^"\'\s<>\\]+', resp.text)
+                            clean_imgs = [u.strip().rstrip("\\").rstrip('"').rstrip("'") for u in all_imgs]
+                            f800_imgs = list(dict.fromkeys([u for u in clean_imgs if "/f800/" in u and "member_avatar" not in u]))
+                            if f800_imgs:
+                                photo_urls = f800_imgs
+
+                            # Compléter les métadonnées via JSON-LD si absentes
+                            for script in re.findall(r'<script type="application/ld\+json">([^<]+)</script>', resp.text):
+                                try:
+                                    ld_data = json.loads(script)
+                                    if ld_data.get("@type") == "Product":
+                                        if not item_data:
+                                            item_data = {"id": item_id, "domain": domain}
+                                        if not item_data.get("title") or item_data.get("title").startswith("Article #"):
+                                            item_data["title"] = ld_data.get("name") or f"Article #{item_id}"
+                                        if not item_data.get("brand") or item_data.get("brand") in ("Inconnue", "Marque de l'annonce"):
+                                            item_data["brand"] = (ld_data.get("brand") or {}).get("name") or "Inconnue"
+                                        if not item_data.get("price") or item_data.get("price") == 0.0:
+                                            item_data["price"] = float((ld_data.get("offers") or {}).get("price") or 0.0)
+                                        if not item_data.get("description"):
+                                            item_data["description"] = ld_data.get("description") or ""
+                                        break
+                                except Exception:
+                                    pass
+                    except Exception as e:
+                        logger.debug(f"Erreur extraction directe photos HD Vinted #{item_id}: {e}")
+
+                # Dernier repli : photo Telegram si aucune photo extraite
+                if not photo_urls:
                     photos = msg.get("photo") or []
                     photo_url = ""
                     if photos:
@@ -380,17 +437,49 @@ class TelegramCommandHandler:
                             f_path = file_res.json().get("result", {}).get("file_path")
                             if f_path:
                                 photo_url = f"https://api.telegram.org/file/bot{self.bot_token}/{f_path}"
+                    if photo_url:
+                        photo_urls = [photo_url]
 
-                    caption = msg.get("caption") or msg.get("text") or ""
+                caption = msg.get("caption") or msg.get("text") or ""
+                if not item_data:
                     item_data = {
                         "id": item_id,
                         "title": f"Article #{item_id}",
                         "brand": "Marque de l'annonce",
                         "price": 0.0,
                         "description": caption,
-                        "photo_urls": [photo_url] if photo_url else [],
-                        "domain": "vinted.fr"
+                        "photo_urls": photo_urls,
+                        "domain": domain
                     }
+                else:
+                    item_data["photo_urls"] = photo_urls
+
+                # Sauvegarder ou enrichir l'annonce en base de données pour les futurs appels
+                if self.db_manager and photo_urls:
+                    try:
+                        with self.db_manager._get_connection() as conn:
+                            c = conn.cursor()
+                            c.execute("""
+                                INSERT INTO deal_feedback (item_id, domain, title, brand, price, description, photo_urls)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                ON CONFLICT(domain, item_id) DO UPDATE SET
+                                    photo_urls = excluded.photo_urls,
+                                    title = CASE WHEN deal_feedback.title IS NULL OR deal_feedback.title = '' THEN excluded.title ELSE deal_feedback.title END,
+                                    brand = CASE WHEN deal_feedback.brand IS NULL OR deal_feedback.brand = '' THEN excluded.brand ELSE deal_feedback.brand END,
+                                    price = CASE WHEN deal_feedback.price IS NULL OR deal_feedback.price = 0 THEN excluded.price ELSE deal_feedback.price END,
+                                    description = CASE WHEN deal_feedback.description IS NULL OR deal_feedback.description = '' THEN excluded.description ELSE deal_feedback.description END
+                            """, (
+                                item_id,
+                                domain,
+                                item_data.get("title", ""),
+                                item_data.get("brand", ""),
+                                item_data.get("price", 0.0),
+                                item_data.get("description", ""),
+                                json.dumps(photo_urls, ensure_ascii=False)
+                            ))
+                            conn.commit()
+                    except Exception as e:
+                        logger.debug(f"Erreur mise à jour deal_feedback avec photos HD: {e}")
 
                 from src.authenticity_checker import AuthenticityChecker
                 cfg = self._load_full_config()

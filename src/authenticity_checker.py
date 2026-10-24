@@ -54,41 +54,55 @@ class AuthenticityChecker:
         })
 
     def _select_auth_photos(self, photo_urls: List[str]) -> List[str]:
-        """Sélectionne intelligemment jusqu'à 4 photos clés (vue d'ensemble, étiquette de col, détails/logo, dos)."""
+        """
+        Sélectionne intelligemment jusqu'à 5 photos clés pour le Legit Check :
+        - Vue d'ensemble (face)
+        - Vue arrière / silhouette
+        - Détails intermédiaires (matière, logo, zip, broderies)
+        - Étiquette de col et étiquette de composition/lavage (souvent vers la fin)
+        """
         if not photo_urls:
             return []
-        if len(photo_urls) <= 4:
+        if len(photo_urls) <= 5:
             return list(photo_urls)
 
-        # Prioriser les photos montrant l'étiquette ou les détails
-        selected = [photo_urls[0]]
-        tag_keywords = ["label", "tag", "etiquette", "logo", "detail", "wash", "care", "serial"]
+        n = len(photo_urls)
+        # Échantillonnage représentatif sur toute la galerie de photos
+        target_indices = [
+            0,                 # 1ère photo : vue de face
+            1,                 # 2ème photo : dos ou profil
+            n // 3,            # ~33% : détail / logo / matière
+            2 * n // 3,        # ~66% : étiquette de col / finitions
+            n - 1              # dernière photo : étiquette intérieure / wash tag
+        ]
 
-        tag_photo = None
-        for u in photo_urls[1:]:
-            u_low = u.lower()
-            if any(k in u_low for k in tag_keywords):
-                tag_photo = u
-                break
+        selected = []
+        seen_indices = set()
+        for idx in target_indices:
+            if idx not in seen_indices and 0 <= idx < n:
+                seen_indices.add(idx)
+                selected.append(photo_urls[idx])
 
-        if tag_photo:
-            selected.append(tag_photo)
-
-        for u in photo_urls[1:]:
-            if u not in selected and len(selected) < 4:
+        # Compléter si besoin jusqu'à 5 photos
+        for u in photo_urls:
+            if u not in selected and len(selected) < 5:
                 selected.append(u)
 
-        return selected[:4]
+        return selected[:5]
 
     def _download_images(self, photo_urls: List[str], domain: str = "vinted.fr") -> List[Any]:
-        """Télécharge les photos en mémoire pour Gemini."""
+        """Télécharge les photos en parallèle en mémoire pour Gemini (optimisé < 1s)."""
         from google.genai import types
 
-        headers = {"Referer": f"https://www.{domain}/"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Referer": f"https://www.{domain}/"
+        }
 
         def dl_one(url: str):
             try:
-                resp = self.session.get(url, headers=headers, timeout=8)
+                h = headers if "vinted" in url else {}
+                resp = self.session.get(url, headers=h, timeout=5)
                 if resp.status_code == 200 and len(resp.content) > 1000:
                     c_type = resp.headers.get("Content-Type", "")
                     mime = "image/webp"
@@ -102,7 +116,7 @@ class AuthenticityChecker:
             return None
 
         parts = []
-        with ThreadPoolExecutor(max_workers=min(4, len(photo_urls))) as pool:
+        with ThreadPoolExecutor(max_workers=min(5, len(photo_urls))) as pool:
             results = list(pool.map(dl_one, photo_urls))
             for p in results:
                 if p:
@@ -239,7 +253,8 @@ class AuthenticityChecker:
 
                     data["source"] = "Gemini Vision"
                     data["model"] = model_name
-                    logger.info(f"🛡️ Legit Check réussi ({model_name}) pour #{item.get('id')} : {data.get('verdict')} ({data.get('confidence_pct')}%)")
+                    data["photos_count"] = len(image_parts)
+                    logger.info(f"🛡️ Legit Check réussi ({model_name}) pour #{item.get('id')} ({len(image_parts)} photos) : {data.get('verdict')} ({data.get('confidence_pct')}%)")
                     return data
 
                 except Exception as e:
@@ -309,6 +324,8 @@ class AuthenticityChecker:
         missings = auth_res.get("missing_checks", [])
         rec = auth_res.get("recommendation", "")
         model_used = auth_res.get("model", "Gemini Vision")
+        photos_count = auth_res.get("photos_count")
+        photos_line = f"🖼️ <b>Photos analysées :</b> {photos_count} photos inspectées\n" if photos_count else ""
 
         if verdict == "AUTHENTIQUE_PROBABLE" or "AUTHENTIQUE" in verdict:
             badge_icon = "🟢"
@@ -331,7 +348,8 @@ class AuthenticityChecker:
             f"━━━━━━━━━━━━━━━━━━\n"
             f"📌 <b>Article :</b> <code>#{item_id}</code>\n"
             f"🏢 <b>Marque :</b> <b>{brand}</b>\n"
-            f"🏷️ <b>Titre :</b> {title[:60]}\n\n"
+            f"🏷️ <b>Titre :</b> {title[:60]}\n"
+            f"{photos_line}\n"
             f"⚖️ <b>VERDICT :</b> {badge_icon} <b>{badge_title}</b>\n"
             f"⚠️ <b>Niveau de risque :</b> {risk_color} <b>{risk}</b>\n\n"
             f"📝 <b>Bilan de l'expert :</b>\n"

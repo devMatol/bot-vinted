@@ -404,8 +404,9 @@ class VintedScraper:
                     photo_urls.append(src)
 
             if not photo_urls:
-                all_imgs = re.findall(r'https://images1\.vinted\.net/t/[^"\'\s<>]+\?[^"\'\s<>]+', html_text)
-                for src in all_imgs:
+                all_imgs = re.findall(r'https://images1\.vinted\.net/t/[^"\'\s<>\\]+\?[^"\'\s<>\\]+', html_text)
+                for raw_src in all_imgs:
+                    src = raw_src.strip().rstrip("\\").rstrip('"').rstrip("'")
                     if "/f800/" in src and src not in photo_urls:
                         photo_urls.append(src)
 

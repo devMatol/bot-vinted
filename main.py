@@ -911,14 +911,49 @@ def evaluate_and_notify_v2_worker(
         favourite_matches=favourite_matches
     )
 
+    # Sauvegarde de l'annonce et photos pour feedback et vérification d'authenticité (Legit Check)
+    try:
+        db.save_deal_alert(
+            item=item,
+            search_name=search_name,
+            domain=domain,
+            vision_result={"score": dec_res.score_final, "verdict": dec_res.decision}
+        )
+    except Exception as e:
+        logger.debug(f"Erreur sauvegarde deal_alert #{item_id}: {e}")
+
     direct_url = item.get("url") or f"https://www.{domain}/items/{item_id}"
     log_verdict(True, item, price,
         f"goût Rita {taste_str}, revente ~{dec_res.revente_retenue:.0f}€, marge +{dec_res.margin:.0f}€ → Telegram | {direct_url}")
 
 
-def evaluate_and_notify_ai_worker(*args, **kwargs):
+def evaluate_and_notify_ai_worker(
+    item: Dict[str, Any],
+    search_name: str,
+    domain: str,
+    display_country: str,
+    price: float,
+    shipping_cost: float,
+    min_margin_eur: float,
+    message_id: Optional[int],
+    vision_evaluator: Any,
+    notifier: Any,
+    db: Any,
+    search_id: str
+):
     """Fonction conservée pour la rétrocompatibilité des tests."""
-    pass
+    if vision_evaluator and hasattr(vision_evaluator, "evaluate_deal"):
+        res = vision_evaluator.evaluate_deal(item, price, min_margin_eur=min_margin_eur)
+        resale = float(res.get("resale_estimate_eur") or 0.0)
+        total_cost = price + shipping_cost
+        margin = resale - total_cost
+        if message_id and notifier and hasattr(notifier, "edit_deal_alert_result"):
+            notifier.edit_deal_alert_result(message_id=message_id, vision_result=res, item=item, resale_estimate=resale, margin=margin)
+        elif notifier and hasattr(notifier, "send_deal_alert"):
+            if res.get("verdict") not in ("REJECT", "REJECTED") and res.get("score", 0) >= 70:
+                notifier.send_deal_alert(item, res, search_name=search_name, domain=domain)
+        if db and hasattr(db, "save_deal_alert"):
+            db.save_deal_alert(item, search_name=search_name, domain=domain, vision_result=res)
 
 
 # =====================================================================

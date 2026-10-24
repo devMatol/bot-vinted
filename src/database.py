@@ -94,6 +94,7 @@ class DatabaseManager:
                     verdict TEXT DEFAULT '',
                     classification TEXT DEFAULT 'ALERT_SENT',
                     evaluated_by TEXT DEFAULT 'System',
+                    source TEXT DEFAULT 'telegram_click',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(domain, item_id)
                 )
@@ -106,6 +107,7 @@ class DatabaseManager:
                 ("domain", "TEXT DEFAULT 'vinted.fr'"),
                 ("score", "REAL DEFAULT 0.0"),
                 ("verdict", "TEXT DEFAULT ''"),
+                ("source", "TEXT DEFAULT 'telegram_click'"),
             ]:
                 if col_name not in feedback_cols:
                     try:
@@ -253,7 +255,31 @@ class DatabaseManager:
                 pass
 
         photos = item.get("photos") or []
-        photo_urls = [p.get("url") for p in photos if isinstance(p, dict) and p.get("url")]
+        photo_urls = []
+        if isinstance(photos, list):
+            for p in photos:
+                if isinstance(p, dict) and p.get("url"):
+                    photo_urls.append(p.get("url"))
+                elif isinstance(p, str) and p.startswith("http"):
+                    photo_urls.append(p)
+
+        if not photo_urls and "photo_urls" in item:
+            raw_p = item.get("photo_urls")
+            if isinstance(raw_p, list):
+                photo_urls = [u for u in raw_p if isinstance(u, str) and u.startswith("http")]
+            elif isinstance(raw_p, str):
+                try:
+                    photo_urls = json.loads(raw_p)
+                except Exception:
+                    pass
+
+        if not photo_urls:
+            single = item.get("photo")
+            if isinstance(single, dict) and single.get("url"):
+                photo_urls.append(single.get("url"))
+            elif isinstance(single, str) and single.startswith("http"):
+                photo_urls.append(single)
+
         photo_urls_json = json.dumps(photo_urls, ensure_ascii=False)
 
         score = 0.0
