@@ -289,6 +289,8 @@ def radar_worker(
     in_demand_tracker: InDemandTracker,
     first_run_countries: Set[str],
     q_tri: queue.Queue,
+    q_ouvrir: queue.PriorityQueue,
+    q_juge: queue.Queue,
     stats: PipelineStats
 ):
     """
@@ -403,7 +405,7 @@ def radar_worker(
                 logger.info(
                     f"📡 Tour radar #{radar_cycle} ({cycle_duration:.1f}s) : "
                     f"{new_items_in_cycle} nouvelle(s) annonce(s) transmise(s) au TRI | "
-                    f"Files: tri={q_tri.qsize()} ouvrir={q_ouvrir.qsize()}"
+                    f"Files: tri={q_tri.qsize()} | ouvrir={q_ouvrir.qsize()} | juge={q_juge.qsize()}"
                 )
 
             # Pause intelligente entre tours de radar
@@ -996,7 +998,7 @@ def run_bot(single_pass: bool = False):
     # 4. Démarrage du RADAR (1 thread producteur)
     radar_thread = threading.Thread(
         target=radar_worker,
-        args=(stop_event, scrapers_by_domain, scraper_index_by_domain, db, seen_items, in_demand_tracker, first_run_countries, q_tri, stats),
+        args=(stop_event, scrapers_by_domain, scraper_index_by_domain, db, seen_items, in_demand_tracker, first_run_countries, q_tri, q_ouvrir, q_juge, stats),
         name="RADAR",
         daemon=True
     )
