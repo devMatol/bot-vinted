@@ -620,7 +620,8 @@ def juge_worker(
     q_juge: queue.Queue,
     notifier: TelegramNotifier,
     db: DatabaseManager,
-    stats: PipelineStats
+    stats: PipelineStats,
+    scrapers_by_domain: Optional[Dict[str, List[VintedScraper]]] = None
 ):
     """
     Exécute le pipeline décisionnel v2 complet et l'envoi d'alerte Telegram,
@@ -661,7 +662,8 @@ def juge_worker(
                 shipping_cost=shipping_cost,
                 notifier=notifier,
                 db=db,
-                search_id=search_def.get("id", "")
+                search_id=search_def.get("id", ""),
+                scrapers_by_domain=scrapers_by_domain
             )
 
             discovered_at = item.get("_discovered_at", time.time())
@@ -690,7 +692,8 @@ def evaluate_and_notify_v2_worker(
     shipping_cost: float,
     notifier: TelegramNotifier,
     db: DatabaseManager,
-    search_id: str
+    search_id: str,
+    scrapers_by_domain: Optional[Dict[str, List[VintedScraper]]] = None
 ):
     """
     Pipeline décisionnel v2 réutilisant l'embedding précalculé pour un temps record :
@@ -756,7 +759,7 @@ def evaluate_and_notify_v2_worker(
             ))
             return
 
-    # Étage C : Marché & Revente
+    # Étage C : Marché & Revente en direct (LiveMarket Check)
     t0_market = time.perf_counter()
     record_market_listing(
         item,
@@ -766,7 +769,28 @@ def evaluate_and_notify_v2_worker(
         size_norm=rule_res.size_normalized,
         distinct_score=clip_res.distinct_score
     )
+
+    # Confrontation réelle au marché Vinted en direct (LiveMarket Check sans plafond)
+    live_market_data = None
+    if scrapers_by_domain:
+        scraper_list = scrapers_by_domain.get(domain) or scrapers_by_domain.get("vinted.fr") or []
+        if scraper_list:
+            try:
+                from src.scoring.live_market import get_live_market_service
+                live_service = get_live_market_service()
+                live_market_data = live_service.get_live_market_data(
+                    brand=rule_res.brand_canonical,
+                    category=clip_res.clip_category,
+                    scraper=scraper_list[0],
+                    domain=domain
+                )
+            except Exception as e:
+                logger.debug(f"Erreur LiveMarket: {e}")
+
     mkt_med = market_median(rule_res.brand_canonical, rule_res.brand_line, clip_res.clip_category)
+    if live_market_data and live_market_data.get("median_price"):
+        mkt_med = float(live_market_data["median_price"])
+
     comp_matcher = get_comparables_matcher()
     comp_price = 0.0
     comparables = []
@@ -789,7 +813,8 @@ def evaluate_and_notify_v2_worker(
         taste_score=taste_score,
         embedding=clip_res.embedding,
         comp_price=comp_price,
-        config=config
+        config=config,
+        live_market=live_market_data
     )
     market_ms = (time.perf_counter() - t0_market) * 1000
 
@@ -965,7 +990,7 @@ def run_bot(single_pass: bool = False):
     for i in range(4):
         t = threading.Thread(
             target=juge_worker,
-            args=(i + 1, stop_event, q_juge, notifier, db, stats),
+            args=(i + 1, stop_event, q_juge, notifier, db, stats, scrapers_by_domain),
             name=f"JUGE-{i+1}",
             daemon=True
         )

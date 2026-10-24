@@ -360,7 +360,8 @@ def estimate_resale_price(
     taste_score: Optional[float] = None,
     embedding: Optional[np.ndarray] = None,
     comp_price: Optional[float] = None,
-    config: Optional[Dict[str, Any]] = None
+    config: Optional[Dict[str, Any]] = None,
+    live_market: Optional[Dict[str, Any]] = None
 ) -> ResaleResult:
     """
     Système hybride de revente précis et calibré :
@@ -382,9 +383,17 @@ def estimate_resale_price(
     b_norm = (brand_canonical or "").lower().strip()
     c_norm = (category or "").lower().strip()
 
-    # 1. Sélection de la base médiane la plus précise possible
+    # 1. Sélection de la base médiane la plus précise possible (priorité absolue au Vrai Marché Vinted)
     source = "global"
-    if (b_norm, c_norm) in b_c_map:
+    has_live_market = False
+    if live_market and live_market.get("sample_count", 0) >= 3:
+        sample_cnt = live_market["sample_count"]
+        med_p = float(live_market["median_price"])
+        p25 = float(live_market["p25_price"])
+        base_price = med_p
+        source = f"vrai_marche_vinted({brand_canonical} x {category}: {sample_cnt} annonces, med {med_p:.0f}€, P25 {p25:.0f}€)"
+        has_live_market = True
+    elif (b_norm, c_norm) in b_c_map:
         base_price = b_c_map[(b_norm, c_norm)]
         source = f"boutique_pair({brand_canonical} x {category}: {base_price:.0f}€)"
     elif b_norm in b_map:
@@ -456,11 +465,16 @@ def estimate_resale_price(
     elif tier >= 1.5 and cap_price < 55.0:
         cap_price = 55.0
 
-    revente_cible = round(max(8.0, min(revente_brute, cap_price)), 2)
-
     # 5. Scénarios (Pessimiste / Vente flash vs Optimiste / Haut de panier)
-    revente_pessimiste = round(revente_cible * 0.78, 2)  # -22% vente flash
-    revente_optimiste = round(revente_cible * 1.22, 2)   # +22% acheteur coup de cœur
+    if has_live_market and live_market:
+        revente_pessimiste = round(float(live_market.get("p25_price", revente_cible * 0.78)), 2)
+        revente_optimiste = round(float(live_market.get("p75_price", revente_cible * 1.22)), 2)
+        cap_price = max(cap_price, revente_optimiste)
+    else:
+        revente_pessimiste = round(revente_cible * 0.78, 2)  # -22% vente flash
+        revente_optimiste = round(revente_cible * 1.22, 2)   # +22% acheteur coup de cœur
+
+    revente_cible = round(max(8.0, min(revente_brute, cap_price)), 2)
 
     # 6. Décote de négociation acheteur Vinted pour la revente nette
     nego_discount = float(cfg.get("resale_negotiation_discount", 0.12))
@@ -485,7 +499,8 @@ def estimate_resale_price(
         "revente_optimiste": revente_optimiste,
         "nego_discount": nego_discount,
         "cap_price": cap_price,
-        "comp_price": comp_price or 0.0
+        "comp_price": comp_price or 0.0,
+        "live_market": live_market
     }
 
     return ResaleResult(

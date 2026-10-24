@@ -413,13 +413,29 @@ class TelegramNotifier:
         else:
             etat_display = f"{ai_icon} <b>Vision IA :</b> <i>{html.escape(ai_status)}</i>"
 
+        # Bloc Marché réel Vinted (LiveMarket Check)
+        resale_data = decision_res.details.get("resale") or {}
+        lm = resale_data.get("live_market")
+        if lm and lm.get("sample_count"):
+            cnt = lm.get("sample_count", 0)
+            med = float(lm.get("median_price", 0.0))
+            p25 = float(lm.get("p25_price", 0.0))
+            p75 = float(lm.get("p75_price", 0.0))
+            market_line = (
+                f"📈 <b>Marché réel Vinted :</b> <b>{med:.0f} €</b> <i>(sur {cnt} annonces en vente)</i>\n"
+                f"📊 <b>Fourchette observée :</b> {p25:.0f} € (liquidation) ➔ {p75:.0f} €\n"
+                f"🎯 <b>Revente nette négociée :</b> <b>~{decision_res.revente_retenue:.0f} €</b> (après négo -12%)\n"
+            )
+        else:
+            market_line = f"📈 <b>Revente :</b> ~{revente_cible:.0f} € <i>(Nette négociée : <b>{decision_res.revente_retenue:.0f} €</b>)</i>\n"
+
         caption = (
             f"⚡ <b>{header}</b>\n\n"
             f"🏷️ <b>Titre :</b> {title}\n"
             f"💎 <b>Marque :</b> {brand_display}\n"
             f"{price_line}\n"
             f"{etat_display}\n\n"
-            f"📈 <b>Revente :</b> ~{revente_cible:.0f} € <i>(Nette négociée : <b>{decision_res.revente_retenue:.0f} €</b>)</i>\n"
+            f"{market_line}"
             f"💵 <b>Marge nette :</b> <b>+{decision_res.margin:.2f} €</b> (<b>{decision_res.multiple:.1f}x</b>)\n"
             f"📊 <b>Scénarios :</b> ⚡ Flash: {m_flash:+.0f}€ | 🎯 Cible: {decision_res.margin:+.0f}€ | 💎 Max: {m_opt:+.0f}€\n"
             f"🎯 <b>Score :</b> {decision_res.score_final:.1f}/100 ({tier_icon})\n"
