@@ -357,7 +357,11 @@ class TelegramNotifier:
                     taste_block += f"❤️ <b>Favoris proches :</b>\n" + "\n".join(fav_lines) + "\n"
 
         scenarios = decision_res.details.get("scenarios") or {}
-        revente_cible = float(scenarios.get("revente_cible") or decision_res.revente_retenue)
+        ai_prod_name = decision_res.details.get("ai_product_name")
+        if ai_prod_name and decision_res.details.get("ai_resale_min"):
+            revente_cible = float(decision_res.revente_retenue / 0.90)
+        else:
+            revente_cible = float(scenarios.get("revente_cible") or decision_res.revente_retenue)
         m_flash = float(scenarios.get("margin_flash") or (decision_res.margin * 0.7))
         m_opt = float(scenarios.get("margin_opt") or (decision_res.margin * 1.3))
 

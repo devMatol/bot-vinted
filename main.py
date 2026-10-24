@@ -904,6 +904,9 @@ def evaluate_and_notify_v2_worker(
         dec_res.revente_retenue = round(ai_val.estimated_resale_eur * 0.90, 2)  # -10% marge négociation Vinted
         dec_res.margin = round(dec_res.revente_retenue - dec_res.total_cost, 2)
         dec_res.multiple = round(dec_res.revente_retenue / max(1.0, dec_res.total_cost), 1)
+        if "scenarios" in dec_res.details:
+            dec_res.details["scenarios"]["revente_cible"] = ai_val.estimated_resale_eur
+            dec_res.details["scenarios"]["margin_cible"] = dec_res.margin
 
     dec_res.details["ai_product_name"] = ai_val.product_name
     dec_res.details["ai_resale_reason"] = ai_val.reason
