@@ -189,6 +189,9 @@ class TelegramCommandHandler:
             self._cmd_seuils(text[7:].strip())
         elif text.startswith("/why"):
             self._cmd_why(text[4:].strip())
+        elif text.startswith("/auth") or text.startswith("/legit"):
+            arg = text.split(maxsplit=1)[1] if len(text.split()) > 1 else ""
+            self._cmd_auth(arg.strip())
         elif text.startswith("/retrain_vision") or text.startswith("/train_vision"):
             self._cmd_retrain_vision()
         elif text.startswith("/retrain_gout"):
@@ -239,6 +242,11 @@ class TelegramCommandHandler:
         try:
             item_id = int(parts[2])
         except ValueError:
+            return
+
+        # Si Vérification d'authenticité (Legit Check) :
+        if action_type == "check_auth":
+            self._handle_authenticity_check(query, item_id)
             return
 
         # Si Rejet : présenter les boutons de motifs pour l'entraînement IA Vision
@@ -317,6 +325,111 @@ class TelegramCommandHandler:
                     )
             except Exception as e:
                 logger.error(f"Erreur mise a jour caption evaluation: {e}")
+
+    def _handle_authenticity_check(self, query: Dict[str, Any], item_id: int):
+        """Lance l'expertise d'authenticité (Legit Check) en tâche de fond pour ne pas bloquer Telegram."""
+        query_id = query.get("id")
+        msg = query.get("message") or {}
+        chat_id = msg.get("chat", {}).get("id") or self.chat_id
+        msg_id = msg.get("message_id")
+
+        if query_id:
+            try:
+                requests.post(
+                    f"{self.base_url}/answerCallbackQuery",
+                    json={
+                        "callback_query_id": query_id,
+                        "text": "🔍 Analyse d'authenticité lancée avec Gemini...",
+                        "show_alert": False
+                    },
+                    timeout=5
+                )
+            except Exception:
+                pass
+
+        def worker():
+            try:
+                item_data = None
+                if self.db_manager:
+                    with self.db_manager._get_connection() as conn:
+                        c = conn.cursor()
+                        c.execute("""
+                            SELECT title, brand, price, condition, seller_rating, description, photo_urls, domain
+                            FROM deal_feedback WHERE item_id = ?
+                        """, (item_id,))
+                        row = c.fetchone()
+                        if row:
+                            item_data = {
+                                "id": item_id,
+                                "title": row[0] or "",
+                                "brand": row[1] or "",
+                                "price": row[2] or 0.0,
+                                "condition": row[3] or "",
+                                "description": row[5] or "",
+                                "photo_urls": row[6] or "[]",
+                                "domain": row[7] or "vinted.fr"
+                            }
+
+                if not item_data:
+                    photos = msg.get("photo") or []
+                    photo_url = ""
+                    if photos:
+                        file_id = photos[-1].get("file_id")
+                        file_res = requests.get(f"{self.base_url}/getFile?file_id={file_id}", timeout=5)
+                        if file_res.status_code == 200:
+                            f_path = file_res.json().get("result", {}).get("file_path")
+                            if f_path:
+                                photo_url = f"https://api.telegram.org/file/bot{self.bot_token}/{f_path}"
+
+                    caption = msg.get("caption") or msg.get("text") or ""
+                    item_data = {
+                        "id": item_id,
+                        "title": f"Article #{item_id}",
+                        "brand": "Marque de l'annonce",
+                        "price": 0.0,
+                        "description": caption,
+                        "photo_urls": [photo_url] if photo_url else [],
+                        "domain": "vinted.fr"
+                    }
+
+                from src.authenticity_checker import AuthenticityChecker
+                cfg = self._load_full_config()
+                checker = AuthenticityChecker(config=cfg, db_manager=self.db_manager)
+                report = checker.evaluate_authenticity(item_data)
+
+                brand = item_data.get("brand") or "Inconnue"
+                title = item_data.get("title") or f"Article #{item_id}"
+                formatted_msg = AuthenticityChecker.format_telegram_report(report, item_id, brand, title)
+
+                send_payload = {
+                    "chat_id": chat_id,
+                    "text": formatted_msg,
+                    "parse_mode": "HTML"
+                }
+                if msg_id:
+                    send_payload["reply_to_message_id"] = msg_id
+
+                requests.post(f"{self.base_url}/sendMessage", json=send_payload, timeout=10)
+
+            except Exception as e:
+                logger.error(f"Erreur worker vérification authenticité #{item_id}: {e}")
+                self._reply(f"❌ Impossible de vérifier l'authenticité pour #{item_id} : {e}")
+
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
+
+    def _cmd_auth(self, item_id_str: str):
+        """Lance une vérification d'authenticité (Legit Check) sur un item_id donné."""
+        if not item_id_str:
+            self._reply("ℹ️ <b>Utilisation :</b> <code>/auth &lt;item_id&gt;</code>\n<i>Exemple : /auth 10501950407</i>")
+            return
+        m = re.search(r'(\d+)', item_id_str)
+        if not m:
+            self._reply("❌ ID d'article invalide.")
+            return
+        item_id = int(m.group(1))
+        self._reply(f"🔍 <b>Vérification d'authenticité lancée pour l'article #{item_id}...</b>\n<i>Analyse multi-photos en cours avec Gemini Vision...</i>")
+        self._handle_authenticity_check({}, item_id)
 
     def _prompt_reject_reasons(self, query: Dict[str, Any], item_id: int):
         """Affiche les sous-boutons de motifs détaillés pour enrichir l'IA Vision."""
@@ -693,6 +806,7 @@ class TelegramCommandHandler:
             "📊 <b>/status</b> : Voir l'état du bot\n"
             "📸 <b>/annotations</b> : Statistiques du dataset Vision IA\n"
             "🧠 <b>/retrain_vision</b> : Étalonner la vision sur vos rejets écrits\n"
+            "🛡️ <b>/auth &lt;id&gt;</b> : Vérifier l'authenticité d'une annonce (Legit Check)\n"
             "💰 <b>/cout</b> : Suivi des tokens et coût IA du jour\n"
             "🌍 <b>/countries</b> : Voir ou modifier les pays Vinted surveillés\n"
             "📈 <b>/dataset</b> : Statistiques d'apprentissage Auto-Buy\n"

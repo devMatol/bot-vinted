@@ -230,6 +230,9 @@ class TelegramNotifier:
                     {"text": "🎯 🟢 MUST BUY", "callback_data": f"fb:must_buy:{item_id}"},
                     {"text": "🤔 🟡 AVIS MAMA", "callback_data": f"fb:wife_opinion:{item_id}"},
                     {"text": "❌ 🔴 REJET", "callback_data": f"fb:reject:{item_id}"}
+                ],
+                [
+                    {"text": "🛡️ Vérifier Authenticité (Legit Check) 🔍", "callback_data": f"fb:check_auth:{item_id}"}
                 ]
             ]
         })
@@ -458,6 +461,9 @@ class TelegramNotifier:
                     {"text": "🎯 🟢 MUST BUY", "callback_data": f"fb:must_buy:{item_id}"},
                     {"text": "🤔 🟡 AVIS MAMA", "callback_data": f"fb:wife_opinion:{item_id}"},
                     {"text": "❌ 🔴 REJET", "callback_data": f"fb:reject:{item_id}"}
+                ],
+                [
+                    {"text": "🛡️ Vérifier Authenticité (Legit Check) 🔍", "callback_data": f"fb:check_auth:{item_id}"}
                 ]
             ]
         })
@@ -643,6 +649,9 @@ class TelegramNotifier:
                     {"text": "🎯 🟢 MUST BUY", "callback_data": f"fb:must_buy:{item_id}"},
                     {"text": "🤔 🟡 AVIS MAMA", "callback_data": f"fb:wife_opinion:{item_id}"},
                     {"text": "❌ 🔴 REJET", "callback_data": f"fb:reject:{item_id}"}
+                ],
+                [
+                    {"text": "🛡️ Vérifier Authenticité (Legit Check) 🔍", "callback_data": f"fb:check_auth:{item_id}"}
                 ]
             ]
         })
