@@ -160,15 +160,19 @@ def make_decision(
 
     market_ratio = round(price / max(1.0, market_median_price), 2) if market_median_price > 0 else 1.0
 
-    # 1. Sous-score de marge/multiple (0 à 100)
-    if multiple <= 1.0:
+    # 1. Sous-score de marge/multiple réel aligné avec l'Arbitre IA (0 à 100)
+    if margin <= 0.0 or multiple <= 1.0:
         margin_score = 0.0
-    elif multiple <= 2.0:
-        margin_score = (multiple - 1.0) * 70.0
-    elif multiple <= 3.0:
-        margin_score = 70.0 + (multiple - 2.0) * 20.0
+    elif margin < min_margin or multiple < min_multiple:
+        margin_ratio = max(0.0, margin / max(1.0, min_margin))
+        multiple_ratio = max(0.0, (multiple - 1.0) / max(0.1, min_multiple - 1.0))
+        margin_score = min(50.0, ((margin_ratio + multiple_ratio) / 2.0) * 50.0)
     else:
-        margin_score = min(100.0, 90.0 + (multiple - 3.0) * 10.0)
+        # Dès que marge >= min_margin (ex: 12€) ET multiple >= min_multiple (ex: 1.5x)
+        # Le deal est validé sur la marge : socle garanti de 70/100, montant à 100/100
+        bonus_marge = min(15.0, (margin - min_margin) / 2.0)
+        bonus_multiple = min(15.0, (multiple - min_multiple) * 10.0)
+        margin_score = min(100.0, 70.0 + bonus_marge + bonus_multiple)
 
     # 2. Sous-score de ratio de marché (0 à 100)
     if market_ratio <= 0.4:
@@ -183,24 +187,24 @@ def make_decision(
         market_score = max(0.0, 30.0 - (market_ratio - 1.0) * 30.0)
 
     # 3. Sous-score de goût / distinctivité (0 à 100)
-    taste_enabled = bool(cfg.get("taste_filter_enabled", True))
+    taste_enabled = bool(cfg.get("taste_filter_enabled", False))
     if taste_enabled:
         if taste_score is not None:
             eff_taste_score = taste_score
         else:
             eff_taste_score = distinct_pct if distinct_pct is not None else distinct_score
-        taste_weight = float(weights.get("taste", weights.get("distinct", 0.25)))
+        taste_weight = float(weights.get("taste", weights.get("distinct", 0.0)))
     else:
-        eff_taste_score = 0.50
+        eff_taste_score = 0.0
         taste_weight = 0.0
 
     taste_score_100 = eff_taste_score * 100.0
 
     # 4. Combinaison linéaire pondérée normalisée
-    w_rules = float(weights.get("rules", 0.35))
-    w_margin = float(weights.get("margin", 0.35))
+    w_rules = float(weights.get("rules", 0.25))
+    w_margin = float(weights.get("margin", 0.50))
     w_market = float(weights.get("market", 0.15))
-    w_signals = float(weights.get("signals", 0.15))
+    w_signals = float(weights.get("signals", 0.10))
     total_w = w_rules + taste_weight + w_margin + w_market + w_signals
 
     raw_final_score = (

@@ -725,39 +725,9 @@ def evaluate_and_notify_v2_worker(
         ))
         return
 
-    # Goût Rita & Comparables
-    taste_score = item.get("_taste_score")
-    if taste_score is None:
-        taste_score = get_taste_score(clip_res.embedding, clip_res.clip_category or rule_res.category)
-
-    favourite_matches = find_top_matching_favourites(clip_res.embedding, top_k=2) if clip_res.embedding is not None else []
-
-    # Contrôle basiques des lignes diffusion : taste_score < 0.5 -> rejet
-    if (
-        rule_res.category in DIFFUSION_BASIC_CATEGORIES
-        and is_diffusion_target_brand(rule_res.brand_canonical, rule_res.brand_line, str(item.get("brand_title") or item.get("brand") or ""))
-    ):
-        diff_reject = False
-        stop_reason = ""
-        if taste_score is not None:
-            if taste_score < 0.5:
-                diff_reject = True
-                stop_reason = f"Basique ligne diffusion rejeté : Goût Rita insuffisant ({taste_score * 100:.0f}% < 50%)"
-        else:
-            if clip_res.distinct_pct < 0.8:
-                diff_reject = True
-                stop_reason = f"Basique ligne diffusion rejeté : distinct_pct ({clip_res.distinct_pct:.2f} < 0.80)"
-
-        if diff_reject:
-            log_verdict(False, item, price, f"basique, goût Rita {taste_score * 100:.0f}%" if taste_score is not None else "basique sans originalité")
-            tc = calculate_total_cost(price, display_country, shipping_cost)
-            record_decision(DecisionResult(
-                item_id=item_id, decision="REJECTED", alert_tier="NONE",
-                score_final=0.0, price=price, total_cost=tc,
-                revente_retenue=0.0, margin=0.0, multiple=0.0,
-                stage_reached="A", stop_reason=stop_reason
-            ))
-            return
+    # Comparables (Goût Rita désactivé)
+    taste_score = None
+    favourite_matches = []
 
     # Étage C : Marché & Revente en direct (LiveMarket Check)
     t0_market = time.perf_counter()
@@ -828,13 +798,36 @@ def evaluate_and_notify_v2_worker(
     )
     signals_ms = (time.perf_counter() - t0_sig) * 1000
 
-    # Décision centrale
+    tc = calculate_total_cost(price, display_country, shipping_cost)
+
+    # Étage Arbitre IA Multimodal (Gemini Vision) : identification visuelle et estimation de revente réelle
+    from src.scoring.ai_product_valuation import get_ai_product_valuator
+    valuator = get_ai_product_valuator(config=config, db_manager=db)
+    min_margin = float(config.get("min_margin_eur", 12.0))
+    t0_ai = time.perf_counter()
+    ai_val = valuator.evaluate_product(item=item, total_cost=tc, min_margin_eur=min_margin)
+    ai_ms = (time.perf_counter() - t0_ai) * 1000
+
+    if ai_val.verdict == "REJECTED":
+        log_verdict(False, item, price, f"IA Revente : {ai_val.reason}")
+        record_decision(DecisionResult(
+            item_id=item_id, decision="REJECTED", alert_tier="NONE",
+            score_final=0.0, price=price, total_cost=tc,
+            revente_retenue=ai_val.estimated_resale_eur, margin=ai_val.margin_net, multiple=0.0,
+            stage_reached="E", stop_reason=ai_val.reason
+        ))
+        return
+
+    # La revente retenue est établie par l'Arbitre IA (repli sur resale_res si IA absente)
+    revente_reelle = ai_val.estimated_resale_eur if ai_val.estimated_resale_eur > 0 else resale_res.revente_retenue
+
+    # Décision centrale : calcul du sous-score marge et verdict final basés sur l'Arbitre IA
     dec_res = make_decision(
         item_id=item_id,
         price=price,
         rule_score=rule_res.score,
         distinct_score=clip_res.distinct_score,
-        revente_retenue=resale_res.revente_retenue,
+        revente_retenue=revente_reelle,
         market_median_price=mkt_med,
         listing_signal_score=signals_res.score,
         country=display_country,
@@ -842,13 +835,14 @@ def evaluate_and_notify_v2_worker(
         stock_photo_score=clip_res.stock_photo_score,
         damage_score=clip_res.damage_score,
         distinct_pct=clip_res.distinct_pct,
-        taste_score=taste_score,
+        taste_score=None,
         config=config,
         execution_times={
             "rules_ms": 0.3,
             "clip_ms": clip_ms,
             "market_ms": market_ms,
             "signals_ms": signals_ms,
+            "ai_ms": ai_ms,
             "decision_ms": 0.5
         },
         resale_details={
@@ -861,57 +855,34 @@ def evaluate_and_notify_v2_worker(
         }
     )
 
-    taste_str = f"{taste_score * 100:.0f}%" if taste_score is not None else "N/A"
+    dec_res.details["ai_product_name"] = ai_val.product_name
+    dec_res.details["ai_resale_reason"] = ai_val.reason
+    dec_res.details["ai_resale_min"] = ai_val.resale_min_flash
+    dec_res.details["ai_resale_max"] = ai_val.resale_max_high
+    if "scenarios" in dec_res.details:
+        dec_res.details["scenarios"]["revente_cible"] = revente_reelle
+        dec_res.details["scenarios"]["margin_cible"] = dec_res.margin
+
     logger.debug(
         f"📊 [Décision v2] [{display_country.upper()}] '{title[:35]}' : "
         f"Décision={dec_res.decision} ({dec_res.alert_tier}) | "
         f"Score={dec_res.score_final:.1f}/100 | "
-        f"Goût Rita={taste_str} | "
-        f"Revente={dec_res.revente_retenue:.2f}€ | "
+        f"Pièce IA='{ai_val.product_name}' | "
+        f"Revente IA={dec_res.revente_retenue:.2f}€ | "
         f"Coût={dec_res.total_cost:.2f}€ -> MARGE={dec_res.margin:+.2f}€ ({dec_res.multiple:.1f}x) | "
         f"Motif={dec_res.stop_reason or 'Validé'}"
     )
 
     if dec_res.decision != "VALIDATED":
         log_verdict(False, item, price,
-            f"{dec_res.stop_reason or 'refusé'} | goût Rita {taste_str}, score {dec_res.score_final:.0f}/100, "
-            f"revente ~{dec_res.revente_retenue:.0f}€ pour {dec_res.total_cost:.0f}€ payés port compris")
+            f"{dec_res.stop_reason or 'refusé'} | Score {dec_res.score_final:.0f}/100, "
+            f"IA revente ~{dec_res.revente_retenue:.0f}€ pour {dec_res.total_cost:.0f}€ payés (Marge: {dec_res.margin:+.1f}€)")
         return
 
     # Si config "alert_only_pepites" actif
     if config.get("alert_only_pepites", False) and dec_res.alert_tier != "PEPITE":
         log_verdict(False, item, price, "pas assez fort (mode pépites seules)")
         return
-
-    # Étage E : Identification Visuelle Produit & Revente Réelle par IA Multimodale (Gemini Vision)
-    from src.scoring.ai_product_valuation import get_ai_product_valuator
-    valuator = get_ai_product_valuator(config=config, db_manager=db)
-    min_margin = float(config.get("min_margin_eur", 12.0))
-    ai_val = valuator.evaluate_product(item=item, total_cost=dec_res.total_cost, min_margin_eur=min_margin)
-
-    if ai_val.verdict == "REJECTED":
-        log_verdict(False, item, price, f"IA Vision Revente : {ai_val.reason}")
-        record_decision(DecisionResult(
-            item_id=item_id, decision="REJECTED", alert_tier="NONE",
-            score_final=0.0, price=price, total_cost=dec_res.total_cost,
-            revente_retenue=ai_val.estimated_resale_eur, margin=ai_val.margin_net, multiple=0.0,
-            stage_reached="E", stop_reason=ai_val.reason
-        ))
-        return
-
-    # Si l'IA a identifié la pièce et estimé son vrai prix de revente sur le marché
-    if ai_val.estimated_resale_eur > 0:
-        dec_res.revente_retenue = round(ai_val.estimated_resale_eur * 0.90, 2)  # -10% marge négociation Vinted
-        dec_res.margin = round(dec_res.revente_retenue - dec_res.total_cost, 2)
-        dec_res.multiple = round(dec_res.revente_retenue / max(1.0, dec_res.total_cost), 1)
-        if "scenarios" in dec_res.details:
-            dec_res.details["scenarios"]["revente_cible"] = ai_val.estimated_resale_eur
-            dec_res.details["scenarios"]["margin_cible"] = dec_res.margin
-
-    dec_res.details["ai_product_name"] = ai_val.product_name
-    dec_res.details["ai_resale_reason"] = ai_val.reason
-    dec_res.details["ai_resale_min"] = ai_val.resale_min_flash
-    dec_res.details["ai_resale_max"] = ai_val.resale_max_high
 
     # Étage E optionnel : Contrôle final (si activé)
     final_notes = None
@@ -954,7 +925,7 @@ def evaluate_and_notify_v2_worker(
 
     direct_url = item.get("url") or f"https://www.{domain}/items/{item_id}"
     log_verdict(True, item, price,
-        f"goût Rita {taste_str}, revente ~{dec_res.revente_retenue:.0f}€, marge +{dec_res.margin:.0f}€ → Telegram | {direct_url}")
+        f"Pièce IA: '{ai_val.product_name}', revente ~{dec_res.revente_retenue:.0f}€, marge {dec_res.margin:+.0f}€ ({dec_res.multiple:.1f}x) → Telegram | {direct_url}")
 
 
 def evaluate_and_notify_ai_worker(

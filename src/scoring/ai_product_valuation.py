@@ -160,15 +160,16 @@ Analyse attentivement cette photo d'annonce :
 • Description : "{desc or '(Aucune description)'}"
 
 MISSION :
-1. Identifie avec PRÉCISION ce que montre la photo (nom précis du vêtement, de la pièce ou de l'objet).
-2. Vérifie s'il s'agit d'une VRAIE pièce de mode/vêtement/maroquinerie/chaussure OU d'un simple emballage/goodies (ex: sac shopping en papier de magasin, boîte en carton vide, cintre en plastique, ruban promo, pochon vide, catalogue).
-   -> Si c'est un emballage, sac en papier de magasin ou goodies : "is_resalable_fashion": false, "verdict": "REJECTED".
+1. Identifie avec PRÉCISION ce que montre la photo (nom précis du vêtement, chaussures, maroquinerie ou objet).
+2. Vérifie s'il s'agit d'une VRAIE pièce de mode/vêtement/maroquinerie/chaussure OU EXCLUSIVEMENT d'un emballage/goodies vide (ex: sac shopping en papier de magasin vendu seul, boîte en carton vide, cintre en plastique, ruban promo, pochon vide seul).
+   ATTENTION CRUCIALE : Une vraie pièce de marque vendue avec sa boîte d'origine ou son pochon/dustbag (ex: 'Baskets Just Cavalli avec boîte et pochon', 'Sac avec dustbag') est un VRAI ARTICLE DE VALEUR (is_resalable_fashion: true, category: CHAUSSURES ou VETEMENT ou SAC).
+   -> Uniquement si l'objet est EXCLUSIVEMENT un emballage vide sans vêtement ni chaussure : is_resalable_fashion: false, category: PACKAGING_GOODIES.
 3. Estime le PRIX DE REVENTE RÉALISTE en euros (€) sur Vinted pour CETTE pièce spécifique dans l'état observé (pas un prix théorique abstrait, le prix auquel elle se vend vraiment).
 
 Réponds STRICTEMENT avec cet objet JSON valide (sans backticks ni markdown) :
 {{
-  "product_identified": "<Nom précis de la pièce, ex: 'Sac shopping papier boutique' ou 'Veste blazer en laine' ou 'Jupe jacquard'>",
-  "category": "<PACKAGING_GOODIES | VETEMENT | CHAUSSURES | SAC_MAROQUINERIE | ACCESSOIRE>",
+  "product_identified": "<Nom précis de la pièce, ex: 'Baskets slip-on en cuir' ou 'Veste blazer en laine' ou 'Jupe jacquard'>",
+  "category": "<VETEMENT | CHAUSSURES | SAC_MAROQUINERIE | ACCESSOIRE | PACKAGING_GOODIES>",
   "is_resalable_fashion": true_ou_false,
   "estimated_resale_eur": <montant réaliste en euros>,
   "resale_range": {{"min_flash": <prix vente rapide>, "max_high": <prix haut acheteur coup de coeur>}},
@@ -223,8 +224,26 @@ Réponds STRICTEMENT avec cet objet JSON valide (sans backticks ni markdown) :
                     r_max = float(r_range.get("max_high") or resale * 1.25)
                     reason = str(data.get("reason") or "")
 
-                    # Si emballage ou goodies ou sac en papier
-                    if not is_fashion or cat == "PACKAGING_GOODIES" or any(w in p_name.lower() for w in ["papier", "packaging", "carton", "emballage", "cintre", "pochon", "dustbag", "shopping bag"]):
+                    # Rejet uniquement si l'objet est EXCLUSIVEMENT un emballage vide sans vêtement ni chaussure
+                    fashion_keywords = [
+                        "basket", "chaussure", "sneaker", "boot", "escarpin", "talon",
+                        "veste", "pantalon", "robe", "jupe", "manteau", "pull", "chemise",
+                        "sac", "jean", "top", "blouson", "sweat", "cardigan", "t-shirt", "polo"
+                    ]
+                    has_real_fashion_word = any(
+                        w in p_name.lower() or w in title.lower()
+                        for w in fashion_keywords
+                    )
+
+                    is_pure_packaging = (
+                        cat == "PACKAGING_GOODIES" or
+                        any(w in p_name.lower() for w in [
+                            "sac en papier", "sac shopping papier", "boîte vide", "boite vide",
+                            "cintre", "carton vide", "ruban"
+                        ])
+                    ) and not has_real_fashion_word
+
+                    if not is_fashion and is_pure_packaging:
                         return ProductValuationResult(
                             is_resalable_fashion=False,
                             product_name=p_name,
