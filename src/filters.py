@@ -517,18 +517,39 @@ class DealEvaluator:
                     return False, f"Article Homme exclu de la recherche Femme ('{mkw}')"
 
         # 5. Pertinence Produit : Au moins un mot-clé substantiel dans le titre ou raw_title
-        substantive_words = [
-            w for w in re.findall(r'\b[a-zA-ZÀ-ÿ]{3,}\b', raw_search)
-            if normalize_text(w) not in {
-                "les", "des", "pour", "avec", "sans", "tout", "tous", "dans", "sur",
-                "une", "par", "vintage", "homme", "femme", "ancien", "della", "delle",
-                "fur", "von", "mit", "und", "del", "con", "para"
-            }
-        ]
-        if substantive_words:
-            matched_words = [w for w in substantive_words if contains_whole_word(check_text, w)]
-            if not matched_words:
-                return False, f"Article non pertinent : aucun terme de '{raw_search}' trouvé dans le titre"
+        # Exception majeure : Si la recherche cible une marque (b_*) et que la marque de l'article (brand_title)
+        # correspond déjà à la marque ciblée, le vendeur n'a pas besoin de répéter le nom de la marque dans son titre
+        # (ex: Titre: 'Jupe hiver', Marque Vinted: 'Versace' -> 100% pertinent !).
+        brand_target = (search_config.get("brand") or "").lower()
+        brand_variants = [v.lower() for v in (search_config.get("brand_variants") or [])]
+        if brand_target and brand_target not in brand_variants:
+            brand_variants.append(brand_target)
+
+        item_brand = (item.get("brand_title") or "").strip().lower()
+        norm_brand = normalize_text(item_brand)
+        is_brand_search = bool(
+            search_config.get("id", "").startswith("b_") or
+            search_config.get("brand_ids") or
+            brand_variants
+        )
+        brand_matched = any(
+            normalize_text(v) in norm_brand or norm_brand in normalize_text(v)
+            for v in brand_variants
+        ) if brand_variants else False
+
+        if not (is_brand_search and brand_matched):
+            substantive_words = [
+                w for w in re.findall(r'\b[a-zA-ZÀ-ÿ]{3,}\b', raw_search)
+                if normalize_text(w) not in {
+                    "les", "des", "pour", "avec", "sans", "tout", "tous", "dans", "sur",
+                    "une", "par", "vintage", "homme", "femme", "ancien", "della", "delle",
+                    "fur", "von", "mit", "und", "del", "con", "para"
+                }
+            ]
+            if substantive_words:
+                matched_words = [w for w in substantive_words if contains_whole_word(check_text, w)]
+                if not matched_words:
+                    return False, f"Article non pertinent : aucun terme de '{raw_search}' trouvé dans le titre"
 
         # 6. Filtre Strict "Que du Vintage" (si la recherche cible le vintage)
         is_vintage_search = "vintage" in search_name or "vintage" in raw_search
