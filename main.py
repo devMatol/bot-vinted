@@ -883,6 +883,33 @@ def evaluate_and_notify_v2_worker(
         log_verdict(False, item, price, "pas assez fort (mode pépites seules)")
         return
 
+    # Étage E : Identification Visuelle Produit & Revente Réelle par IA Multimodale (Gemini Vision)
+    from src.scoring.ai_product_valuation import get_ai_product_valuator
+    valuator = get_ai_product_valuator(config=config, db_manager=db)
+    min_margin = float(config.get("min_margin_eur", 12.0))
+    ai_val = valuator.evaluate_product(item=item, total_cost=dec_res.total_cost, min_margin_eur=min_margin)
+
+    if ai_val.verdict == "REJECTED":
+        log_verdict(False, item, price, f"IA Vision Revente : {ai_val.reason}")
+        record_decision(DecisionResult(
+            item_id=item_id, decision="REJECTED", alert_tier="NONE",
+            score_final=0.0, price=price, total_cost=dec_res.total_cost,
+            revente_retenue=ai_val.estimated_resale_eur, margin=ai_val.margin_net, multiple=0.0,
+            stage_reached="E", stop_reason=ai_val.reason
+        ))
+        return
+
+    # Si l'IA a identifié la pièce et estimé son vrai prix de revente sur le marché
+    if ai_val.estimated_resale_eur > 0:
+        dec_res.revente_retenue = round(ai_val.estimated_resale_eur * 0.90, 2)  # -10% marge négociation Vinted
+        dec_res.margin = round(dec_res.revente_retenue - dec_res.total_cost, 2)
+        dec_res.multiple = round(dec_res.revente_retenue / max(1.0, dec_res.total_cost), 1)
+
+    dec_res.details["ai_product_name"] = ai_val.product_name
+    dec_res.details["ai_resale_reason"] = ai_val.reason
+    dec_res.details["ai_resale_min"] = ai_val.resale_min_flash
+    dec_res.details["ai_resale_max"] = ai_val.resale_max_high
+
     # Étage E optionnel : Contrôle final (si activé)
     final_notes = None
     if config.get("final_check", "off") != "off":

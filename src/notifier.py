@@ -413,10 +413,24 @@ class TelegramNotifier:
         else:
             etat_display = f"{ai_icon} <b>Vision IA :</b> <i>{html.escape(ai_status)}</i>"
 
-        # Bloc Marché réel Vinted (LiveMarket Check)
+        ai_prod_name = decision_res.details.get("ai_product_name")
+        ai_prod_line = f"👗 <b>Pièce identifiée IA :</b> <b>{html.escape(ai_prod_name)}</b>\n" if ai_prod_name else ""
+        ai_resale_reason = decision_res.details.get("ai_resale_reason")
+        ai_resale_block = f"💡 <b>Valorisation IA :</b> <i>\"{html.escape(ai_resale_reason)}\"</i>\n" if ai_resale_reason else ""
+
+        # Bloc Marché réel Vinted (LiveMarket Check ou AI Valuation)
         resale_data = decision_res.details.get("resale") or {}
         lm = resale_data.get("live_market")
-        if lm and lm.get("sample_count"):
+        ai_min = decision_res.details.get("ai_resale_min")
+        ai_max = decision_res.details.get("ai_resale_max")
+
+        if ai_prod_name and ai_min and ai_max:
+            target_gross = decision_res.revente_retenue / 0.90
+            market_line = (
+                f"📈 <b>Revente réelle estimée IA :</b> <b>~{target_gross:.0f} €</b> <i>(Fourchette : {ai_min:.0f} € à {ai_max:.0f} €)</i>\n"
+                f"🎯 <b>Revente nette négociée :</b> <b>~{decision_res.revente_retenue:.0f} €</b> (après négo)\n"
+            )
+        elif lm and lm.get("sample_count"):
             cnt = lm.get("sample_count", 0)
             med = float(lm.get("median_price", 0.0))
             p25 = float(lm.get("p25_price", 0.0))
@@ -433,6 +447,7 @@ class TelegramNotifier:
             f"⚡ <b>{header}</b>\n\n"
             f"🏷️ <b>Titre :</b> {title}\n"
             f"💎 <b>Marque :</b> {brand_display}\n"
+            f"{ai_prod_line}"
             f"{price_line}\n"
             f"{etat_display}\n\n"
             f"{market_line}"
@@ -441,6 +456,7 @@ class TelegramNotifier:
             f"🎯 <b>Score :</b> {decision_res.score_final:.1f}/100 ({tier_icon})\n"
             f"📁 <b>Catégorie :</b> {cat_str}\n"
             f"{taste_block}\n"
+            f"{ai_resale_block}"
             f"🛍️ <b>Comparables vendus :</b>\n{comp_block}\n\n"
             f"💡 <b>Points forts :</b>\n{reasons_block}\n"
         )
