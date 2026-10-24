@@ -1,3 +1,4 @@
+import sys
 import logging
 import json
 import time
@@ -7,6 +8,7 @@ import os
 import re
 import html
 import shutil
+import numpy as np
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
@@ -1174,6 +1176,9 @@ class TelegramCommandHandler:
             try:
                 import subprocess
                 py_exe = sys.executable
+                venv_py = os.path.join(os.getcwd(), "venv", "Scripts", "python.exe")
+                if os.path.exists(venv_py):
+                    py_exe = venv_py
                 p = subprocess.run([py_exe, "scripts/train_vision.py"], capture_output=True, text=True, timeout=300)
                 if p.returncode != 0:
                     err_msg = p.stderr or p.stdout or "Erreur inconnue"
