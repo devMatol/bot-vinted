@@ -47,7 +47,8 @@ FLAW_LABELS = {
     "PRICE": "💸 Trop cher",
     "FAKE": "⚠️ Faux / Dupe",
     "CHILD": "👶 Vêtement enfant",
-    "COMMENT": "💬 Commentaire libre"
+    "COMMENT": "💬 Commentaire libre",
+    "CUSTOM_TEXT": "✍️ Motif écrit sur mesure"
 }
 
 class TelegramCommandHandler:
@@ -186,6 +187,8 @@ class TelegramCommandHandler:
             self._cmd_seuils(text[7:].strip())
         elif text.startswith("/why"):
             self._cmd_why(text[4:].strip())
+        elif text.startswith("/retrain_vision") or text.startswith("/train_vision"):
+            self._cmd_retrain_vision()
         elif text.startswith("/retrain_gout"):
             self._cmd_retrain_gout()
         elif text.startswith("/retrain"):
@@ -326,6 +329,9 @@ class TelegramCommandHandler:
         reason_markup = json.dumps({
             "inline_keyboard": [
                 [
+                    {"text": "✍️ Écrire la raison exacte 💬", "callback_data": f"flaw:CUSTOM_TEXT:{item_id}"}
+                ],
+                [
                     {"text": "🧵 Défaut / Abîmé / Tache", "callback_data": f"flaw:DEFECT:{item_id}"},
                     {"text": "👗 Pas mon style", "callback_data": f"flaw:STYLE:{item_id}"}
                 ],
@@ -400,7 +406,49 @@ class TelegramCommandHandler:
                 logger.error(f"Erreur annulation rejet: {e}")
             return
 
-        # 2. Motif choisi : archiver et enregistrer en base
+        # 2. Cas spécifique : L'utilisateur veut écrire la raison exacte
+        if flaw_type == "CUSTOM_TEXT":
+            try:
+                requests.post(
+                    f"{self.base_url}/answerCallbackQuery",
+                    json={"callback_query_id": query_id, "text": "✍️ Écrivez votre raison en réponse...", "show_alert": False},
+                    timeout=5
+                )
+            except Exception:
+                pass
+
+            prompt_text = (
+                f"✍️ <b>Précisez la raison exacte du rejet pour l'article #{item_id} :</b>\n\n"
+                f"<i>Exemples précis de défauts ou motifs :</i>\n"
+                f"• <code>Semelle décollée / trouée</code>\n"
+                f"• <code>Cuir craquelé / griffé</code>\n"
+                f"• <code>Tache de graisse manche gauche</code>\n"
+                f"• <code>Doublure déchirée</code>\n"
+                f"• <code>Fermeture éclair / zip cassé</code>\n"
+                f"• <code>Bouloches / matière feutrée</code>\n\n"
+                f"💬 <b>Répondez directement à ce message avec vos mots :</b>"
+            )
+            force_reply_markup = json.dumps({
+                "force_reply": True,
+                "input_field_placeholder": "Ex: semelle usée, trou manche...",
+                "selective": True
+            })
+            try:
+                requests.post(
+                    f"{self.base_url}/sendMessage",
+                    data={
+                        "chat_id": chat_id,
+                        "text": prompt_text,
+                        "parse_mode": "HTML",
+                        "reply_markup": force_reply_markup
+                    },
+                    timeout=10
+                )
+            except Exception as e:
+                logger.error(f"Erreur envoi ForceReply prompt: {e}")
+            return
+
+        # 3. Motif prédéfini choisi : archiver et enregistrer en base
         flaw_label = FLAW_LABELS.get(flaw_type, flaw_type)
         self._archive_vision_data(item_id, msg, flaw_type, user_comment="", user_name=user_name)
 
@@ -427,7 +475,11 @@ class TelegramCommandHandler:
         })
 
         existing_caption = msg.get("caption") or msg.get("text") or ""
-        badge = f"\n\n❌ <b>REJETÉ :</b> {flaw_label}\n🧠 <i>Photo et motif indexés pour l'apprentissage IA</i>"
+        badge = (
+            f"\n\n❌ <b>REJETÉ :</b> {flaw_label}\n"
+            f"🧠 <i>Photo et motif indexés pour l'apprentissage IA.</i>\n"
+            f"💬 <i>(Vous pouvez aussi répondre à ce message avec du texte pour préciser le défaut)</i>"
+        )
         new_caption = existing_caption + badge if badge not in existing_caption else existing_caption
 
         try:
@@ -474,6 +526,24 @@ class TelegramCommandHandler:
                                     f.write(img_data.content)
                                 photo_url = dl_url
 
+            # Repli si le message n'avait pas de photo directe (ex: réponse au ForceReply texte)
+            if not os.path.exists(local_img_path) and self.db_manager:
+                try:
+                    with self.db_manager._get_connection() as conn:
+                        c = conn.cursor()
+                        c.execute("SELECT photo_urls FROM deal_feedback WHERE item_id = ?", (item_id,))
+                        row = c.fetchone()
+                        if row and row[0]:
+                            urls = json.loads(row[0])
+                            if urls and isinstance(urls, list) and urls[0]:
+                                img_res = requests.get(urls[0], timeout=10)
+                                if img_res.status_code == 200:
+                                    with open(local_img_path, "wb") as f:
+                                        f.write(img_res.content)
+                                    photo_url = urls[0]
+                except Exception as e:
+                    logger.debug(f"Erreur téléchargement photo fallback #{item_id}: {e}")
+
             cache_emb_path = os.path.join("data/embeddings", f"{item_id}.npy")
             cache_siglip = os.path.join("data/embeddings", "siglip", f"{item_id}.npy")
             if not os.path.exists(local_emb_path):
@@ -481,6 +551,17 @@ class TelegramCommandHandler:
                     shutil.copyfile(cache_siglip, local_emb_path)
                 elif os.path.exists(cache_emb_path):
                     shutil.copyfile(cache_emb_path, local_emb_path)
+                elif os.path.exists(local_img_path):
+                    try:
+                        from PIL import Image
+                        from src.scoring.clip_scorer import get_clip_scorer
+                        scorer = get_clip_scorer()
+                        with Image.open(local_img_path) as pil_img:
+                            emb = scorer.encode_pil_image(pil_img)
+                            if emb is not None:
+                                np.save(local_emb_path, emb)
+                    except Exception as e:
+                        logger.debug(f"Impossible de calculer l'embedding à la volée pour #{item_id}: {e}")
 
             if self.db_manager:
                 self.db_manager.record_vision_annotation(
@@ -498,7 +579,7 @@ class TelegramCommandHandler:
             return False
 
     def _handle_reply_annotation(self, message: Dict[str, Any], reply_to: Dict[str, Any], text: str, sender_info: Dict[str, Any]):
-        """Traite une réponse par message texte (Reply) sur une alerte."""
+        """Traite une réponse par message texte (Reply) sur une alerte ou prompt de motif."""
         user_name = sender_info.get("first_name", "Utilisateur")
         caption_or_text = reply_to.get("caption") or reply_to.get("text") or ""
 
@@ -523,7 +604,9 @@ class TelegramCommandHandler:
                 break
 
         if not item_id and caption_or_text:
-            m = re.search(r'/items/(\d+)', caption_or_text)
+            m = re.search(r'#(\d+)', caption_or_text)
+            if not m:
+                m = re.search(r'/items/(\d+)', caption_or_text)
             if m:
                 item_id = int(m.group(1))
 
@@ -532,7 +615,7 @@ class TelegramCommandHandler:
             return
 
         t_low = text.lower()
-        if any(w in t_low for w in ["trou", "tache", "abim", "abîm", "dechir", "déchir", "semelle", "usé", "use", "effiloch", "rayur", "rayé", "sal", "défonc", "defonc", "cassé", "casse", "accroc"]):
+        if any(w in t_low for w in ["trou", "tache", "abim", "abîm", "dechir", "déchir", "semelle", "usé", "use", "effiloch", "rayur", "rayé", "sal", "défonc", "defonc", "cassé", "casse", "accroc", "craquel", "decol", "décol", "zipp", "zip", "fermeture", "peluch", "bouloch"]):
             flaw_type = "DEFECT"
         elif any(w in t_low for w in ["style", "moche", "horrible", "ringard", "pas beau", "pas mon style", "laid", "bof", "pas rita"]):
             flaw_type = "STYLE"
@@ -557,11 +640,12 @@ class TelegramCommandHandler:
             )
 
         self._reply(
-            f"🎯 <b>Annotation d'entraînement enregistrée !</b>\n\n"
+            f"🎯 <b>Raison du rejet enregistrée avec précision !</b>\n\n"
             f"📌 <b>Article :</b> <code>#{item_id}</code>\n"
-            f"🏷️ <b>Motif détecté :</b> {flaw_label}\n"
-            f"📝 <b>Votre note :</b> <i>\"{html.escape(text)}\"</i>\n\n"
-            f"🧠 <i>Photo HD et commentaire indexés pour le réentraînement de la vision.</i>"
+            f"🏷️ <b>Catégorie :</b> {flaw_label}\n"
+            f"✍️ <b>Votre motif précis :</b> <i>\"{html.escape(text)}\"</i>\n\n"
+            f"🧠 <i>Photo HD, motif textuel et embedding indexés pour la détection IA.</i>\n"
+            f"💡 <i>Tapez <code>/retrain_vision</code> pour étalonner l'IA sur vos retours !</i>"
         )
 
     def _reply(self, text: str):
@@ -606,6 +690,7 @@ class TelegramCommandHandler:
             "⏸️ <b>/off</b> : Mettre le bot en pause\n"
             "📊 <b>/status</b> : Voir l'état du bot\n"
             "📸 <b>/annotations</b> : Statistiques du dataset Vision IA\n"
+            "🧠 <b>/retrain_vision</b> : Étalonner la vision sur vos rejets écrits\n"
             "💰 <b>/cout</b> : Suivi des tokens et coût IA du jour\n"
             "🌍 <b>/countries</b> : Voir ou modifier les pays Vinted surveillés\n"
             "📈 <b>/dataset</b> : Statistiques d'apprentissage Auto-Buy\n"
@@ -613,7 +698,8 @@ class TelegramCommandHandler:
             "➕ <b>/add Nom | Recherche | PrixMax</b>\n"
             "   <i>Ex: /add Nike Tech | nike tech fleece | 40</i>\n"
             "🗑️ <b>/del NuméroOuNom</b> : Supprimer une recherche\n"
-            "❓ <b>/help</b> : Afficher ce menu"
+            "❓ <b>/help</b> : Afficher ce menu\n\n"
+            "💡 <b>Conseil Rejets :</b> Sur chaque alerte, cliquez sur ❌ 🔴 REJET puis sur <b>✍️ Écrire la raison</b> pour taper un motif précis (ex: <i>semelle décollée</i>) !"
         )
         self._reply(msg)
 
@@ -1049,7 +1135,9 @@ class TelegramCommandHandler:
 
         t = threading.Thread(target=worker, daemon=True)
         t.start()
-        """Lance le réentraînement complet des modèles en tâche de fond (Lot 8)."""
+
+    def _cmd_retrain(self):
+        """Lance le réentraînement complet des modèles de revente en tâche de fond (Lot 8)."""
         self._reply("⏳ <b>Réentraînement lancé en arrière-plan...</b>\n\n1. Entraînement des modèles de revente\n2. Optimisation des comparables\n3. Backtest et calibration\n\n<i>Vous recevrez une notification à la fin.</i>")
 
         def worker():
@@ -1067,6 +1155,60 @@ class TelegramCommandHandler:
                 self._reply(msg)
             except Exception as e:
                 self._reply(f"❌ Échec du réentraînement : {e}")
+
+        t = threading.Thread(target=worker, daemon=True)
+        t.start()
+
+    def _cmd_retrain_vision(self):
+        """Lance l'entraînement et l'étalonnage de l'IA Vision sur les motifs de rejet collectés (Phase 3)."""
+        self._reply(
+            "🧠 <b>Entraînement de l'IA Vision lancé...</b>\n\n"
+            "1. Analyse des annotations et raisons de rejets écrites\n"
+            "2. Génération des sondes de défauts textuelles et bilingues\n"
+            "3. Indexation de la mémoire d'exemplaires de défauts (k-NN)\n"
+            "4. Rechargement à chaud du moteur de vision\n\n"
+            "<i>Notification dès la fin.</i>"
+        )
+
+        def worker():
+            try:
+                import subprocess
+                py_exe = sys.executable
+                p = subprocess.run([py_exe, "scripts/train_vision.py"], capture_output=True, text=True, timeout=300)
+                if p.returncode != 0:
+                    err_msg = p.stderr or p.stdout or "Erreur inconnue"
+                    self._reply(f"❌ Échec de l'entraînement vision :\n{err_msg[:400]}")
+                    return
+
+                # Rechargement de la mémoire de défauts à chaud dans le scorer en mémoire
+                from src.scoring.clip_scorer import get_clip_scorer
+                scorer = get_clip_scorer()
+                scorer.reload_defect_memory()
+
+                report_file = "data/vision_dataset/vision_train_report.json"
+                if os.path.exists(report_file):
+                    with open(report_file, "r", encoding="utf-8") as f:
+                        rep = json.load(f)
+                    n_annots = rep.get("total_annotations", 0)
+                    n_exemplars = rep.get("defect_exemplars", 0)
+                    n_probes = rep.get("custom_probes_count", 0)
+                    top_reasons = rep.get("top_reasons", [])
+                    reasons_str = "\n".join([f"• <i>{r}</i>" for r in top_reasons[:5]]) or "Aucun motif écrit"
+
+                    msg = (
+                        f"✅ <b>IA VISION RÉENTRAÎNÉE AVEC SUCCÈS !</b>\n\n"
+                        f"📊 <b>Annotations traitées :</b> {n_annots}\n"
+                        f"🛡️ <b>Exemplaires de défauts mémorisés (k-NN) :</b> {n_exemplars}\n"
+                        f"🎯 <b>Sondes personnalisées créées :</b> {n_probes}\n"
+                        f"📝 <b>Vos motifs récurrents appris :</b>\n{reasons_str}\n\n"
+                        f"⚡ <i>Le bot détecte désormais automatiquement ces défauts lors des scans !</i>"
+                    )
+                else:
+                    msg = "✅ <b>IA Vision réentraînée !</b> Mémoire de défauts mise à jour."
+
+                self._reply(msg)
+            except Exception as e:
+                self._reply(f"❌ Erreur entraînement vision: {e}")
 
         t = threading.Thread(target=worker, daemon=True)
         t.start()
