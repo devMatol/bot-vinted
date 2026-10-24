@@ -277,6 +277,17 @@ def evaluate_rules(
         base_score = 45.0
         reasons.append(f"Marque diffusion Tier 1.0 ({brand_canonical}) : base 45")
     else:
+        if cfg.get("only_target_brands", True):
+            return RuleResult(
+                category=category,
+                brand_canonical=brand_canonical,
+                brand_line=brand_line,
+                tier=tier,
+                score=0.0,
+                hard_reject=True,
+                reasons=["Pièce sans marque ciblée exclue (Focus marques uniquement)"],
+                size_normalized=size_norm
+            )
         base_score = 35.0
         reasons.append("Pièce sans marque reconnue : base 35")
 
