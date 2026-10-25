@@ -156,8 +156,12 @@ class FashionClipScorer:
         self._stats_lock = threading.Lock()
 
         torch.set_num_threads(self.num_threads)
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        if self.device == "cuda":
+            logger.info(f"⚡ Inférence visuelle GPU activée sur : {torch.cuda.get_device_name(0)}")
+        else:
+            logger.info(f"Chargement du modèle de vision ({target_model}) sur CPU avec {self.num_threads} threads...")
 
-        logger.info(f"Chargement du modèle de vision ({target_model}) sur CPU avec {self.num_threads} threads...")
         t0 = time.perf_counter()
         try:
             self.model, _, self.preprocess = open_clip.create_model_and_transforms(target_model)
@@ -169,6 +173,7 @@ class FashionClipScorer:
             self.tokenizer = open_clip.get_tokenizer(fallback_model)
             self.model_name = fallback_model
 
+        self.model.to(self.device)
         self.model.eval()
         self.model_short_name = get_model_short_name(self.model_name)
         self.embeddings_dir = os.path.join(self.base_embeddings_dir, self.model_short_name)
@@ -339,7 +344,7 @@ class FashionClipScorer:
             for set_name, labels_dict in self.label_sets.items():
                 keys = list(labels_dict.keys())
                 prompts = list(labels_dict.values())
-                tokens = self.tokenizer(prompts)
+                tokens = self.tokenizer(prompts).to(self.device)
                 text_feats = self.model.encode_text(tokens)
                 text_feats = text_feats / text_feats.norm(dim=-1, keepdim=True)
                 features_dict[set_name] = (keys, text_feats)
@@ -389,10 +394,10 @@ class FashionClipScorer:
         return [img for img in images if img is not None]
 
     def encode_pil_image(self, img: Image.Image) -> Optional[np.ndarray]:
-        """Encode une image PIL unique directement sur CPU (normalisée L2)."""
+        """Encode une image PIL unique (normalisée L2)."""
         import torch
         try:
-            tensor = self.preprocess(img).unsqueeze(0)
+            tensor = self.preprocess(img).unsqueeze(0).to(self.device)
             with torch.no_grad():
                 raw_feat = self.model.encode_image(tensor)
                 feat = raw_feat / raw_feat.norm(dim=-1, keepdim=True)
@@ -415,10 +420,13 @@ class FashionClipScorer:
 
         with torch.no_grad():
             keys, text_feats = self.text_features[set_name]
+            if text_feats.device != image_features.device:
+                text_feats = text_feats.to(image_features.device)
             # similarity: [N_photos, N_labels]
             similarity = (image_features @ text_feats.T) * self.logit_scale
             if self.logit_bias is not None:
-                similarity = similarity + self.logit_bias
+                bias = self.logit_bias.to(similarity.device) if hasattr(self.logit_bias, 'to') else self.logit_bias
+                similarity = similarity + bias
             probs = torch.softmax(similarity, dim=-1).detach().cpu().numpy()
         return keys, probs
 
@@ -449,7 +457,7 @@ class FashionClipScorer:
         precomputed = item.get("_clip_embedding")
         if precomputed is not None and isinstance(precomputed, np.ndarray) and len(precomputed) == self.embedding_dim:
             mean_embedding_np = precomputed
-            tensor_feats = torch.from_numpy(mean_embedding_np).unsqueeze(0)
+            tensor_feats = torch.from_numpy(mean_embedding_np).unsqueeze(0).to(self.device)
             image_features = tensor_feats / tensor_feats.norm(dim=-1, keepdim=True)
             photos_count = 1
 
@@ -458,7 +466,7 @@ class FashionClipScorer:
             try:
                 mean_embedding_np = np.load(cache_path).astype(np.float32)
                 if mean_embedding_np.ndim == 1 and len(mean_embedding_np) == self.embedding_dim:
-                    tensor_feats = torch.from_numpy(mean_embedding_np).unsqueeze(0)
+                    tensor_feats = torch.from_numpy(mean_embedding_np).unsqueeze(0).to(self.device)
                     image_features = tensor_feats / tensor_feats.norm(dim=-1, keepdim=True)
                     photos_count = 1
             except Exception as e:
@@ -491,7 +499,7 @@ class FashionClipScorer:
                 )
 
             photos_count = len(images)
-            tensors = torch.stack([self.preprocess(img) for img in images])
+            tensors = torch.stack([self.preprocess(img) for img in images]).to(self.device)
 
             with torch.no_grad():
                 raw_feats = self.model.encode_image(tensors)

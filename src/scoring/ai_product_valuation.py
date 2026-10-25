@@ -54,6 +54,7 @@ class AIProductValuator:
             self.api_keys = []
 
         self.models = ["gemini-3.5-flash-lite", "gemini-flash-latest"]
+        self._key_cooldowns: Dict[str, float] = {}
         self.session = requests.Session()
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
@@ -179,8 +180,24 @@ Réponds STRICTEMENT avec cet objet JSON valide (sans backticks ni markdown) :
         from google import genai
         from google.genai import types
 
+        now = time.time()
+        active_keys = [k for k in self.api_keys if self._key_cooldowns.get(k, 0.0) < now]
+        if not active_keys:
+            ms = (time.perf_counter() - t0) * 1000
+            return ProductValuationResult(
+                is_resalable_fashion=True,
+                product_name="Article non vérifié IA (Quotas API épuisés)",
+                estimated_resale_eur=0.0,
+                margin_net=0.0,
+                verdict="VALIDATED",
+                reason="Quotas API Gemini temporairement épuisés, repli sur modèle statistique",
+                execution_ms=ms
+            )
+
         for model_name in self.models:
-            for api_key in self.api_keys:
+            for api_key in active_keys:
+                if self._key_cooldowns.get(api_key, 0.0) >= now:
+                    continue
                 try:
                     client = genai.Client(api_key=api_key)
                     res = client.models.generate_content(
@@ -290,7 +307,13 @@ Réponds STRICTEMENT avec cet objet JSON valide (sans backticks ni markdown) :
                     )
 
                 except Exception as e:
-                    logger.debug(f"Essai AI Valuation ({model_name}) échoué: {e}")
+                    err_str = str(e)
+                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                        # Mettre la clé en pause pendant 15 minutes pour ne plus ralentir les annonces suivantes
+                        self._key_cooldowns[api_key] = time.time() + 900
+                        logger.warning(f"Clé Gemini (...{api_key[-6:]}) mise en pause 15 min (Quota 429 dépassé).")
+                    else:
+                        logger.debug(f"Essai AI Valuation ({model_name}) échoué: {e}")
                     continue
 
         return ProductValuationResult(
