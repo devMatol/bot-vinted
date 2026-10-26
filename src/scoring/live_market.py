@@ -258,16 +258,15 @@ class LiveMarketService:
         with self._lock:
             if cache_key in self._cache:
                 entry = self._cache[cache_key]
-                if (now - entry["cached_at"]) < self.ttl_seconds:
+                if (now - entry["cached_at"]) < self.ttl_seconds and entry.get("source") != "local_market_listings":
                     return entry
 
-        # 2. Calcul depuis la base locale SQLite (1 ms)
-        local_res = self.compute_from_local_db(clean_brand, clean_cat, domain)
-        if local_res:
-            logger.debug(f"⚡ [Prix Référence Local] {clean_brand} {clean_cat} : Médiane {local_res['median_price']}€ ({local_res['sample_count']} annonces en base)")
-            return local_res
+        # 2. Si absent du cache, enfile un rafraîchissement discret en tâche de fond SANS BLOQUER
+        if scraper and cache_key not in self._bg_pending_keys and not self._bg_queue.full():
+            self._bg_pending_keys.add(cache_key)
+            self._bg_queue.put((clean_brand, clean_cat, scraper, domain, extra_keywords))
 
-        # 3. Si absent de la base, enfile un rafraîchissement discret en tâche de fond SANS BLOQUER
+        return None
         if scraper and cache_key not in self._bg_pending_keys:
             try:
                 self._bg_pending_keys.add(cache_key)

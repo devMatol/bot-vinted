@@ -801,22 +801,6 @@ def evaluate_and_notify_v2_worker(
     tc = calculate_total_cost(price, display_country, shipping_cost)
     min_margin = float(config.get("min_margin_eur", 12.0))
 
-    # Court-circuit économique ultra-rapide (<1ms) : si le potentiel statistique ne couvre pas le coût + seuil de viabilité
-    max_potential_resale = max(
-        resale_res.revente_retenue,
-        resale_res.scenarios.get("optimiste", 0.0) if hasattr(resale_res, "scenarios") and isinstance(resale_res.scenarios, dict) else 0.0,
-        mkt_med * 1.25
-    )
-    if max_potential_resale > 0 and (max_potential_resale - tc) < (min_margin * 0.4):
-        log_verdict(False, item, price, f"Marge potentielle trop faible (+{max_potential_resale - tc:.1f}€ < viabilité)")
-        record_decision(DecisionResult(
-            item_id=item_id, decision="REJECTED", alert_tier="NONE",
-            score_final=rule_res.score, price=price, total_cost=tc,
-            revente_retenue=resale_res.revente_retenue, margin=resale_res.revente_retenue - tc, multiple=0.0,
-            stage_reached="C_FILTER", stop_reason=f"Marge potentielle insuffisante (+{max_potential_resale - tc:.1f}€)"
-        ))
-        return
-
     # Étage Arbitre IA Multimodal (Gemini Vision) : identification visuelle et estimation de revente réelle
     from src.scoring.ai_product_valuation import get_ai_product_valuator
     valuator = get_ai_product_valuator(config=config, db_manager=db)
