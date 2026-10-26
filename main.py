@@ -801,51 +801,56 @@ def evaluate_and_notify_v2_worker(
     tc = calculate_total_cost(price, display_country, shipping_cost)
     min_margin = float(config.get("min_margin_eur", 12.0))
 
-    # Filtre Viabilité Intelligent Pré-IA (protection contre la saturation des quotas Gemini) :
-    # 1. Le plafond de revente de la marque/catégorie doit pouvoir couvrir au moins (coût total + marge)
-    # 2. Pour les marques de diffusion (Tier <= 1.0), l'estimation optimiste doit au moins couvrir coût + 4€
-    is_diffusion = (rule_res.tier <= 1.0)
-    required_resale = tc + min_margin
-    max_cap_allowed = resale_res.cap_price * (1.35 if not is_diffusion else 1.10)
-    cap_ok = (required_resale <= max_cap_allowed)
-    opt_ok = True
-    if is_diffusion:
-        opt_ok = (resale_res.revente_optimiste >= tc + 4.0)
+    # Étage Arbitre de Revente Local & Persistant (Base de connaissances SQLite / RAM < 1ms)
+    # Zéro latence réseau, zéro quota Gemini consommé dans la boucle temps réel
+    from src.scoring.resale_knowledge import get_resale_knowledge_service
+    knowledge_srv = get_resale_knowledge_service(config=config)
 
-    if not (cap_ok and opt_ok):
-        reason_viab = (
-            f"Plafond insuffisant ({resale_res.cap_price:.0f}€ < requis {required_resale:.0f}€)"
-            if not cap_ok else
-            f"Potentiel diffusion trop faible (opt {resale_res.revente_optimiste:.0f}€ pour coût {tc:.0f}€)"
+    brand_target = rule_res.brand_canonical or item.get("brand_title") or ""
+    cat_target = clip_res.clip_category or rule_res.category or "inconnu"
+
+    t0_rkb = time.perf_counter()
+    rkb_entry = knowledge_srv.get_resale_entry(
+        brand=brand_target,
+        category=cat_target,
+        condition=item.get("status"),
+        materials=list(clip_res.material_scores.keys()) if getattr(clip_res, "material_scores", None) else None
+    )
+
+    # Si le couple (marque, catégorie) est totalement inconnu / manquant en base locale :
+    # Déclenchement de l'outil d'enrichissement à la demande (on-demand) pour profiler et enregistrer définitivement en base
+    if not rkb_entry:
+        rkb_entry = knowledge_srv.profile_and_save_missing_pair_on_demand(
+            brand=brand_target,
+            category=cat_target,
+            title=title,
+            sample_price=price
         )
-        log_verdict(False, item, price, f"Écarté avant IA : {reason_viab}")
-        record_decision(DecisionResult(
-            item_id=item_id, decision="REJECTED", alert_tier="NONE",
-            score_final=rule_res.score, price=price, total_cost=tc,
-            revente_retenue=resale_res.revente_retenue, margin=resale_res.revente_retenue - tc, multiple=0.0,
-            stage_reached="C_FILTER", stop_reason=f"Viabilité économique pré-IA : {reason_viab}"
-        ))
-        return
 
-    # Étage Arbitre IA Multimodal (Gemini Vision) : identification visuelle et estimation de revente réelle
-    from src.scoring.ai_product_valuation import get_ai_product_valuator
-    valuator = get_ai_product_valuator(config=config, db_manager=db)
-    t0_ai = time.perf_counter()
-    ai_val = valuator.evaluate_product(item=item, total_cost=tc, min_margin_eur=min_margin)
-    ai_ms = (time.perf_counter() - t0_ai) * 1000
+    rkb_ms = (time.perf_counter() - t0_rkb) * 1000
 
-    if ai_val.verdict == "REJECTED":
-        log_verdict(False, item, price, f"IA Revente : {ai_val.reason}")
+    if rkb_entry:
+        revente_reelle = rkb_entry.resale_target
+        resale_min_flash = rkb_entry.resale_min_flash
+        resale_max_high = rkb_entry.resale_max_high
+        ai_product_desc = rkb_entry.description
+    else:
+        revente_reelle = resale_res.revente_retenue
+        resale_min_flash = resale_res.revente_pessimiste
+        resale_max_high = resale_res.revente_optimiste
+        ai_product_desc = f"{brand_target} {cat_target}"
+
+    # Vérification stricte de rentabilité nette
+    margin_net = revente_reelle - tc
+    if margin_net < min_margin:
+        log_verdict(False, item, price, f"Marge insuffisante (+{margin_net:.1f}€ < min {min_margin:.0f}€) | Revente estimée ~{revente_reelle:.0f}€ pour {tc:.0f}€ payés")
         record_decision(DecisionResult(
             item_id=item_id, decision="REJECTED", alert_tier="NONE",
             score_final=0.0, price=price, total_cost=tc,
-            revente_retenue=ai_val.estimated_resale_eur, margin=ai_val.margin_net, multiple=0.0,
-            stage_reached="E", stop_reason=ai_val.reason
+            revente_retenue=revente_reelle, margin=margin_net, multiple=revente_reelle / tc if tc > 0 else 0.0,
+            stage_reached="E", stop_reason=f"Marge insuffisante (+{margin_net:.1f}€ < min {min_margin:.0f}€)"
         ))
         return
-
-    # La revente retenue est établie par l'Arbitre IA (repli sur resale_res si IA absente)
-    revente_reelle = ai_val.estimated_resale_eur if ai_val.estimated_resale_eur > 0 else resale_res.revente_retenue
 
     # Décision centrale : calcul du sous-score marge et verdict final basés sur l'Arbitre IA
     dec_res = make_decision(
@@ -868,7 +873,7 @@ def evaluate_and_notify_v2_worker(
             "clip_ms": clip_ms,
             "market_ms": market_ms,
             "signals_ms": signals_ms,
-            "ai_ms": ai_ms,
+            "ai_ms": rkb_ms,
             "decision_ms": 0.5
         },
         resale_details={
@@ -881,10 +886,10 @@ def evaluate_and_notify_v2_worker(
         }
     )
 
-    dec_res.details["ai_product_name"] = ai_val.product_name
-    dec_res.details["ai_resale_reason"] = ai_val.reason
-    dec_res.details["ai_resale_min"] = ai_val.resale_min_flash
-    dec_res.details["ai_resale_max"] = ai_val.resale_max_high
+    dec_res.details["ai_product_name"] = f"{brand_target} - {cat_target.replace('_', ' ').title()}"
+    dec_res.details["ai_resale_reason"] = ai_product_desc
+    dec_res.details["ai_resale_min"] = resale_min_flash
+    dec_res.details["ai_resale_max"] = resale_max_high
     if "scenarios" in dec_res.details:
         dec_res.details["scenarios"]["revente_cible"] = revente_reelle
         dec_res.details["scenarios"]["margin_cible"] = dec_res.margin
@@ -893,8 +898,8 @@ def evaluate_and_notify_v2_worker(
         f"📊 [Décision v2] [{display_country.upper()}] '{title[:35]}' : "
         f"Décision={dec_res.decision} ({dec_res.alert_tier}) | "
         f"Score={dec_res.score_final:.1f}/100 | "
-        f"Pièce IA='{ai_val.product_name}' | "
-        f"Revente IA={dec_res.revente_retenue:.2f}€ | "
+        f"Pièce='{brand_target} {cat_target}' | "
+        f"Revente={dec_res.revente_retenue:.2f}€ | "
         f"Coût={dec_res.total_cost:.2f}€ -> MARGE={dec_res.margin:+.2f}€ ({dec_res.multiple:.1f}x) | "
         f"Motif={dec_res.stop_reason or 'Validé'}"
     )
@@ -902,7 +907,7 @@ def evaluate_and_notify_v2_worker(
     if dec_res.decision != "VALIDATED":
         log_verdict(False, item, price,
             f"{dec_res.stop_reason or 'refusé'} | Score {dec_res.score_final:.0f}/100, "
-            f"IA revente ~{dec_res.revente_retenue:.0f}€ pour {dec_res.total_cost:.0f}€ payés (Marge: {dec_res.margin:+.1f}€)")
+            f"Revente ~{dec_res.revente_retenue:.0f}€ pour {dec_res.total_cost:.0f}€ payés (Marge: {dec_res.margin:+.1f}€)")
         return
 
     # Si config "alert_only_pepites" actif
@@ -951,7 +956,7 @@ def evaluate_and_notify_v2_worker(
 
     direct_url = item.get("url") or f"https://www.{domain}/items/{item_id}"
     log_verdict(True, item, price,
-        f"Pièce IA: '{ai_val.product_name}', revente ~{dec_res.revente_retenue:.0f}€, marge {dec_res.margin:+.0f}€ ({dec_res.multiple:.1f}x) → Telegram | {direct_url}")
+        f"Pièce: '{brand_target} {cat_target}', revente ~{dec_res.revente_retenue:.0f}€, marge {dec_res.margin:+.0f}€ ({dec_res.multiple:.1f}x) → Telegram | {direct_url}")
 
 
 def evaluate_and_notify_ai_worker(
