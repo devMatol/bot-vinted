@@ -801,6 +801,32 @@ def evaluate_and_notify_v2_worker(
     tc = calculate_total_cost(price, display_country, shipping_cost)
     min_margin = float(config.get("min_margin_eur", 12.0))
 
+    # Filtre Viabilité Intelligent Pré-IA (protection contre la saturation des quotas Gemini) :
+    # 1. Le plafond de revente de la marque/catégorie doit pouvoir couvrir au moins (coût total + marge)
+    # 2. Pour les marques de diffusion (Tier <= 1.0), l'estimation optimiste doit au moins couvrir coût + 4€
+    is_diffusion = (rule_res.tier <= 1.0)
+    required_resale = tc + min_margin
+    max_cap_allowed = resale_res.cap_price * (1.35 if not is_diffusion else 1.10)
+    cap_ok = (required_resale <= max_cap_allowed)
+    opt_ok = True
+    if is_diffusion:
+        opt_ok = (resale_res.revente_optimiste >= tc + 4.0)
+
+    if not (cap_ok and opt_ok):
+        reason_viab = (
+            f"Plafond insuffisant ({resale_res.cap_price:.0f}€ < requis {required_resale:.0f}€)"
+            if not cap_ok else
+            f"Potentiel diffusion trop faible (opt {resale_res.revente_optimiste:.0f}€ pour coût {tc:.0f}€)"
+        )
+        log_verdict(False, item, price, f"Écarté avant IA : {reason_viab}")
+        record_decision(DecisionResult(
+            item_id=item_id, decision="REJECTED", alert_tier="NONE",
+            score_final=rule_res.score, price=price, total_cost=tc,
+            revente_retenue=resale_res.revente_retenue, margin=resale_res.revente_retenue - tc, multiple=0.0,
+            stage_reached="C_FILTER", stop_reason=f"Viabilité économique pré-IA : {reason_viab}"
+        ))
+        return
+
     # Étage Arbitre IA Multimodal (Gemini Vision) : identification visuelle et estimation de revente réelle
     from src.scoring.ai_product_valuation import get_ai_product_valuator
     valuator = get_ai_product_valuator(config=config, db_manager=db)
