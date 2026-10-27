@@ -323,6 +323,10 @@ class FashionClipScorer:
             "clothing_label": {
                 "label": "a close-up of a clothing label or brand tag",
                 "garment_view": "a full view or general view of a clothing item"
+            },
+            "kenzo_tiger": {
+                "tiger_head": "a garment with an embroidered or printed tiger head lion face logo",
+                "other_design": "a garment with a plain, floral, geometric or classic vintage design without animal face"
             }
         }
         cfg_sets = self.config.get("clip_label_sets")
@@ -687,6 +691,18 @@ class FashionClipScorer:
             reasons.append(
                 f"CLIP rejet négatif : {clip_category} détecté avec probabilité {clip_category_proba:.2f}"
             )
+
+        # Rejet visuel hauts Kenzo tête de tigre / lion
+        b_raw = (str(item.get("brand_title") or item.get("brand") or "")).lower()
+        t_raw = (str(item.get("title") or "")).lower()
+        if ("kenzo" in b_raw or "kenzo" in t_raw) and image_features is not None:
+            if clip_category in {"tshirt", "top", "chemise_blouse", "sweat", "pull_maille"}:
+                kz_keys, kz_probs = self._compute_zero_shot_probs(image_features, "kenzo_tiger")
+                if "tiger_head" in kz_keys:
+                    p_tiger = float(kz_probs[:, kz_keys.index("tiger_head")].max())
+                    if p_tiger >= 0.52:
+                        hard_reject = True
+                        reasons.append(f"CLIP rejet visuel : motif tête de tigre / lion Kenzo détecté ({p_tiger*100:.0f}%)")
 
         # Contrôle critique de l'état :
         # A. Si accroc, matière effilochée, tache ou dégradation avec probabilité >= 0.45 -> rejet direct

@@ -497,6 +497,15 @@ class DealEvaluator:
         if any(bb in norm_title or bb in norm_raw_brand for bb in ["bb cavalli", "b cavalli", "b. cavalli", "b.cavalli"]):
             return False, "Marque BB Cavalli / B. Cavalli exclue"
 
+        # 3c. Exclusion des hauts Kenzo avec tête de tigre / lion
+        if "kenzo" in norm_title or "kenzo" in norm_raw_brand:
+            feline_kws = ["tigre", "tiger", "tigers", "tigres", "lion", "lions", "leone", "leoni", "tigerhead", "tiger head", "tete de tigre", "tete de lion"]
+            if any(contains_whole_word(norm_title, fk) for fk in feline_kws):
+                top_kws = ["sweat", "pull", "tshirt", "t-shirt", "tee", "top", "hoodie", "cardigan", "gilet", "chemise", "debardeur", "maglia", "sudadera", "camiseta", "haut"]
+                detected_c = item.get("detected_category") or ""
+                if detected_c in {"tshirt", "top", "chemise_blouse", "sweat", "pull_maille"} or any(contains_whole_word(norm_title, tk) for tk in top_kws):
+                    return False, "Haut Kenzo tête de tigre / lion exclu"
+
         # 4. Gestion du Genre : Homme vs Femme vs Unisexe
         search_name = (search_config.get("name") or "").lower()
         raw_search = (search_config.get("search_text") or "").lower()
@@ -619,6 +628,16 @@ class DealEvaluator:
         # 3b. Exclusion formelle BB Cavalli / B. Cavalli
         if any(bb in normalize_text(title) or bb in norm_brand for bb in ["bb cavalli", "b cavalli", "b. cavalli", "b.cavalli"]):
             return False, "Marque BB Cavalli / B. Cavalli exclue"
+
+        # 3c. Exclusion des hauts Kenzo tête de tigre / lion (sur description et texte complet)
+        if "kenzo" in normalize_text(title) or "kenzo" in norm_brand:
+            feline_kws = ["tigre", "tiger", "tigers", "tigres", "lion", "lions", "leone", "leoni", "tigerhead", "tiger head", "tete de tigre", "tete de lion"]
+            norm_full = normalize_text(full_text)
+            if any(contains_whole_word(norm_full, fk) for fk in feline_kws):
+                top_kws = ["sweat", "pull", "tshirt", "t-shirt", "tee", "top", "hoodie", "cardigan", "gilet", "chemise", "debardeur", "maglia", "sudadera", "camiseta", "haut"]
+                detected_c = item.get("detected_category") or ""
+                if detected_c in {"tshirt", "top", "chemise_blouse", "sweat", "pull_maille"} or any(contains_whole_word(norm_full, tk) for tk in top_kws):
+                    return False, "Haut Kenzo tête de tigre / lion exclu"
 
         # 4. Validation Stricte de la Marque Cible
         brand_target = search_config.get("brand")

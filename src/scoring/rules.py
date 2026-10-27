@@ -182,6 +182,23 @@ def evaluate_rules(
                 size_normalized=size_norm
             )
 
+    # 3d-bis. Exclusion hauts Kenzo tête de tigre / lion
+    if "kenzo" in brand_canonical.lower() or "kenzo" in raw_brand.lower():
+        feline_words = ["tigre", "tiger", "tigers", "tigres", "lion", "lions", "leone", "leoni", "tigerhead", "tiger head", "tete de tigre", "tete de lion"]
+        if any(contains_whole_word(norm_full_text, fw, text_is_normalized=True) for fw in feline_words):
+            top_words = ["sweat", "pull", "tshirt", "t-shirt", "tee", "top", "hoodie", "cardigan", "gilet", "chemise", "debardeur", "maglia", "sudadera", "camiseta", "haut"]
+            if category in {"tshirt", "top", "chemise_blouse", "sweat", "pull_maille"} or any(contains_whole_word(norm_full_text, tw, text_is_normalized=True) for tw in top_words):
+                return RuleResult(
+                    category=category,
+                    brand_canonical=brand_canonical,
+                    brand_line=brand_line,
+                    tier=tier,
+                    score=0.0,
+                    hard_reject=True,
+                    reasons=["Haut Kenzo tête de tigre / lion exclu"],
+                    size_normalized=size_norm
+                )
+
     # 3e-bis. Basiques des lignes diffusion (catégories basiques + diffusion + distinct_pct < 0.8)
     if distinct_pct is not None:
         if category in DIFFUSION_BASIC_CATEGORIES and is_diffusion_target_brand(brand_canonical, brand_line, raw_brand):
