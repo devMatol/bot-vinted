@@ -8,6 +8,9 @@ from src.i18n_keywords import (
     CHILD_BRANDS,
     CHILD_SIZE_REGEX,
     JUNK_KEYWORDS,
+    TOILETRY_KEYWORDS,
+    BOUTIQUE_PACKAGING_KEYWORDS,
+    BASIC_ITEMS_KEYWORDS,
     FAKE_MARKERS,
     SATISFACTORY_STATUS_MARKERS,
     GENDER_KEYWORDS_MEN,
@@ -505,6 +508,22 @@ class DealEvaluator:
                 detected_c = item.get("detected_category") or ""
                 if detected_c in {"tshirt", "top", "chemise_blouse", "sweat", "pull_maille"} or any(contains_whole_word(norm_title, tk) for tk in top_kws):
                     return False, "Haut Kenzo tête de tigre / lion exclu"
+
+        
+        # 3d. Exclusion stricte des trousses de toilette, vanity, pochettes beauté / cosmétique
+        for tk in TOILETRY_KEYWORDS:
+            if contains_whole_word(norm_title, tk):
+                return False, f"Article exclu (trousse de toilette / cosmétique : '{tk}')"
+
+        # 3e. Exclusion des sacs de boutique, sacs papier, emballages, dustbags
+        for bk in BOUTIQUE_PACKAGING_KEYWORDS:
+            if contains_whole_word(norm_title, bk):
+                return False, f"Article exclu (sac de boutique / packaging : '{bk}')"
+
+        # 3f. Exclusion des pièces basiques (t-shirts simples / unis, jeans bleus classiques)
+        for bi in BASIC_ITEMS_KEYWORDS:
+            if contains_whole_word(norm_title, bi):
+                return False, f"Pièce basique exclue ('{bi}')"
 
         # 4. Gestion du Genre : Homme vs Femme vs Unisexe
         search_name = (search_config.get("name") or "").lower()

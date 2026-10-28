@@ -16,6 +16,11 @@ import logging
 from dataclasses import dataclass, field, asdict
 from typing import Dict, Any, List, Optional, Tuple
 
+from src.i18n_keywords import (
+    TOILETRY_KEYWORDS,
+    BOUTIQUE_PACKAGING_KEYWORDS,
+    BASIC_ITEMS_KEYWORDS
+)
 from src.scoring.taxonomy import (
     detect_category,
     normalize_brand,
@@ -198,6 +203,47 @@ def evaluate_rules(
                     reasons=["Haut Kenzo tête de tigre / lion exclu"],
                     size_normalized=size_norm
                 )
+
+    
+    # 3d-ter. Exclusion trousses de toilette, vanity, sacs de boutique et pièces basiques
+    for tk in TOILETRY_KEYWORDS:
+        if contains_whole_word(norm_full_text, tk, text_is_normalized=True):
+            return RuleResult(
+                category=category,
+                brand_canonical=brand_canonical,
+                brand_line=brand_line,
+                tier=tier,
+                score=0.0,
+                hard_reject=True,
+                reasons=[f"Trousse de toilette / cosmétique exclue : '{tk}'"],
+                size_normalized=size_norm
+            )
+
+    for bk in BOUTIQUE_PACKAGING_KEYWORDS:
+        if contains_whole_word(norm_full_text, bk, text_is_normalized=True):
+            return RuleResult(
+                category=category,
+                brand_canonical=brand_canonical,
+                brand_line=brand_line,
+                tier=tier,
+                score=0.0,
+                hard_reject=True,
+                reasons=[f"Sac de boutique / emballage exclu : '{bk}'"],
+                size_normalized=size_norm
+            )
+
+    for bi in BASIC_ITEMS_KEYWORDS:
+        if contains_whole_word(norm_full_text, bi, text_is_normalized=True):
+            return RuleResult(
+                category=category,
+                brand_canonical=brand_canonical,
+                brand_line=brand_line,
+                tier=tier,
+                score=0.0,
+                hard_reject=True,
+                reasons=[f"Pièce basique exclue : '{bi}'"],
+                size_normalized=size_norm
+            )
 
     # 3e-bis. Basiques des lignes diffusion (catégories basiques + diffusion + distinct_pct < 0.8)
     if distinct_pct is not None:

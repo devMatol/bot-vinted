@@ -324,6 +324,11 @@ class FashionClipScorer:
                 "label": "a close-up of a clothing label or brand tag",
                 "garment_view": "a full view or general view of a clothing item"
             },
+                        "packaging_format": {
+                "real_fashion_item": "a luxury fashion garment or authentic leather handbag or shoes",
+                "toiletry_pouch": "a small nylon or synthetic cosmetic toiletry bag washbag or makeup pouch",
+                "shopping_paper_bag": "a paper shopping boutique gift bag or cardboard bag packaging"
+            },
             "kenzo_tiger": {
                 "tiger_head": "a garment with an embroidered or printed tiger head lion face logo",
                 "other_design": "a garment with a plain, floral, geometric or classic vintage design without animal face"
@@ -691,6 +696,32 @@ class FashionClipScorer:
             reasons.append(
                 f"CLIP rejet négatif : {clip_category} détecté avec probabilité {clip_category_proba:.2f}"
             )
+
+        
+        # Rejet visuel trousse de toilette / sac de boutique papier
+        if image_features is not None:
+            pkg_keys, pkg_probs = self._compute_zero_shot_probs(image_features, "packaging_format")
+            p_toiletry = float(pkg_probs[:, pkg_keys.index("toiletry_pouch")].max()) if "toiletry_pouch" in pkg_keys else 0.0
+            p_shopbag = float(pkg_probs[:, pkg_keys.index("shopping_paper_bag")].max()) if "shopping_paper_bag" in pkg_keys else 0.0
+            if p_toiletry >= 0.55:
+                hard_reject = True
+                reasons.append(f"CLIP rejet visuel : trousse de toilette / trousse beauté détectée ({p_toiletry*100:.0f}%)")
+            elif p_shopbag >= 0.55:
+                hard_reject = True
+                reasons.append(f"CLIP rejet visuel : sac de boutique en papier / packaging détecté ({p_shopbag*100:.0f}%)")
+
+        # Rejet visuel des pièces basiques (t-shirts simples unis et jeans bleus classiques)
+        p_plain = pattern_scores.get("plain", 0.0)
+        if clip_category == "tshirt":
+            if p_plain >= 0.58 and distinct_score < 0.42:
+                hard_reject = True
+                reasons.append(f"CLIP rejet pièce basique : t-shirt simple uni sans motif ({p_plain*100:.0f}%, distinctivité {distinct_score*100:.0f}%)")
+        elif clip_category == "jean":
+            is_plain_jean = (p_plain >= 0.55 and distinct_score < 0.38)
+            is_runway = style_scores.get("runway_luxury", 0.0) >= 0.45 or style_scores.get("vintage_designer", 0.0) >= 0.50
+            if is_plain_jean and not is_runway:
+                hard_reject = True
+                reasons.append(f"CLIP rejet pièce basique : jean bleu classique standard sans distinctivité (distinctivité {distinct_score*100:.0f}%)")
 
         # Rejet visuel hauts Kenzo tête de tigre / lion
         b_raw = (str(item.get("brand_title") or item.get("brand") or "")).lower()

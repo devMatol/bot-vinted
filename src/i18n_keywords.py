@@ -53,7 +53,59 @@ CHILD_SIZE_REGEX = re.compile(
     re.IGNORECASE
 )
 
-JUNK_KEYWORDS = [
+
+TOILETRY_KEYWORDS = [
+    # Français
+    "trousse", "trousses", "trousse de toilette", "trousse toilette", "trousse maquillage",
+    "trousse de beaute", "trousse beauté", "trousse de voyage", "vanity", "vanity case",
+    "beauty case", "beauty-case", "necessaire de toilette", "nécessaire de toilette",
+    "pochette maquillage", "pochette parfum", "pochette beaute", "pochette beauté",
+    "pochette cosmetique", "pochette cosmétique",
+    # Anglais
+    "toiletry", "toiletry bag", "wash bag", "washbag", "cosmetic bag", "cosmetics bag",
+    "makeup bag", "make-up bag", "beauty case", "beauty bag", "dopp kit",
+    # Italien
+    "necessaire", "nécessaire", "borsa da toilette", "pochette trucco", "trousse trucco",
+    # Espagnol
+    "neceser", "neceser de viaje", "neceser de aseo", "bolsa de aseo", "bolsa de maquillaje",
+    # Allemand
+    "kulturbeutel", "kosmetiktasche", "waschtasche", "toilettentasche"
+]
+
+BOUTIQUE_PACKAGING_KEYWORDS = [
+    # Français
+    "sac boutique", "sac de boutique", "sac papier", "sac en papier", "sac carton",
+    "sac en carton", "sac kraft", "sac cabas papier", "sac shopping papier", "sachet boutique",
+    "sac magasin", "sac de magasin", "shopping bag papier", "dustbag", "dust bag",
+    "dust-bag", "housse de protection", "sac anti poussiere", "sac anti-poussière",
+    # Anglais
+    "paper bag", "carrier bag", "boutique bag", "store bag", "shopping bag paper",
+    "gift bag", "retail bag",
+    # Italien
+    "busta carta", "busta boutique", "busta negozio", "shopper carta", "sacchetto carta",
+    # Espagnol
+    "bolsa de papel", "bolsa papel", "bolsa tienda", "bolsa de tienda", "bolsa kraft",
+    # Allemand
+    "papiertüte", "papiertasche", "einkaufstüte", "boutique tüte", "geschenktüte"
+]
+
+BASIC_ITEMS_KEYWORDS = [
+    # T-shirts basiques
+    "t-shirt basique", "t shirt basique", "tshirt basique", "tee basique",
+    "t-shirt simple", "t shirt simple", "tshirt simple", "tee simple",
+    "t-shirt uni", "t shirt uni", "tshirt uni", "tee uni",
+    "basic tee", "basic t-shirt", "basic tshirt", "plain t-shirt", "plain tee",
+    "maglietta basica", "maglia basica", "camiseta básica", "camiseta basica",
+    "t-shirt basico", "t-shirt basic",
+    # Jeans basiques / bleus classiques
+    "jean basique", "jeans basique", "jean classique", "jeans classique",
+    "jean bleu classique", "jeans bleu classique", "jean droit classique",
+    "jean regular bleu", "basic jeans", "classic blue jeans", "classic jeans",
+    "vaquero basico", "vaqueros basicos", "jeans basico", "jeans classico"
+]
+
+JUNK_KEYWORDS = TOILETRY_KEYWORDS + BOUTIQUE_PACKAGING_KEYWORDS + [
+
     # Boîtes, emballages, étuis, vide
     "boite", "boîte", "vide", "vuoto", "vuota", "scatola", "caja", "vacia", "vacía", "empty", "box",
     "schachtel", "karton", "leer", "leere", "doos", "leeg", "lege",
