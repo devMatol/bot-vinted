@@ -525,6 +525,12 @@ class DealEvaluator:
             if contains_whole_word(norm_title, bi):
                 return False, f"Pièce basique exclue ('{bi}')"
 
+        basic_markers = ["basique", "basica", "básica", "basico", "básico", "simple", "semplice"]
+        if any(contains_whole_word(norm_title, bm) for bm in basic_markers):
+            cloth_markers = ["tshirt", "t-shirt", "tee", "top", "pull", "sweat", "jean", "jeans", "pantalon", "camicia", "chemise", "maglia", "camiseta"]
+            if any(contains_whole_word(norm_title, cm) for cm in cloth_markers):
+                return False, "Pièce explicitement qualifiée de basique / simple"
+
         # 4. Gestion du Genre : Homme vs Femme vs Unisexe
         search_name = (search_config.get("name") or "").lower()
         raw_search = (search_config.get("search_text") or "").lower()
