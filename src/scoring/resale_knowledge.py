@@ -350,6 +350,47 @@ CURATED_RESALE_BENCHMARKS = {
         "accessoire": (16.0, 28.0, 48.0, "Ceinture boucle aigle Armani")
     },
 
+    "Coach": {
+        "sac": (45.0, 85.0, 180.0, "Sac cuir Tabby, Willis, Rogue, Swagger, Court ou toile monogramme CC Coach"),
+        "accessoire": (25.0, 45.0, 85.0, "Portefeuille cuir, porte-monnaie ou ceinture boucle C Coach"),
+        "veste": (60.0, 120.0, 240.0, "Blouson en cuir ou perfecto Coach New York"),
+        "blazer": (45.0, 85.0, 170.0, "Veste blazer tailoring Coach"),
+        "manteau": (70.0, 140.0, 280.0, "Trench-coat ou manteau long en laine Coach"),
+        "manteau_fourrure": (90.0, 180.0, 350.0, "Manteau shearling ou col fourrure Coach"),
+        "chaussures": (35.0, 65.0, 120.0, "Baskets signature C ou mocassins cuir Coach"),
+        "bottes": (45.0, 85.0, 160.0, "Bottines cuir ou bottes cavalières Coach"),
+        "escarpins": (30.0, 55.0, 100.0, "Escarpins cuir ou sandales à talon Coach"),
+        "robe": (35.0, 65.0, 130.0, "Robe en soie imprimée ou robe cocktail Coach"),
+        "jupe": (28.0, 50.0, 95.0, "Jupe cuir ou plissée Coach"),
+        "jean": (25.0, 45.0, 80.0, "Jean brodé ou denim signature Coach"),
+        "pantalon": (28.0, 50.0, 95.0, "Pantalon en cuir ou tailoring Coach"),
+        "pull_maille": (35.0, 65.0, 120.0, "Pull en laine mérinos ou cachemire Coach"),
+        "sweat": (35.0, 70.0, 130.0, "Sweat hoodie Rexy dinosaure ou logo Coach"),
+        "chemise_blouse": (28.0, 50.0, 95.0, "Chemise en soie ou blouse fluide Coach"),
+        "top": (20.0, 40.0, 75.0, "Top en soie ou caraco Coach"),
+        "tshirt": (22.0, 42.0, 80.0, "T-shirt graphique Rexy ou signature Coach"),
+    },
+    "Longchamp": {
+        "sac": (35.0, 70.0, 160.0, "Sac Roseau cuir, Le Pliage cuir, Amazone ou grand cabas Longchamp"),
+        "accessoire": (20.0, 38.0, 70.0, "Compagnon cuir Roseau, pochette ou foulard soie Longchamp"),
+        "veste": (50.0, 100.0, 200.0, "Veste en cuir d'agneau ou blouson Longchamp"),
+        "blazer": (40.0, 75.0, 150.0, "Veste blazer habillée Longchamp"),
+        "manteau": (65.0, 130.0, 260.0, "Manteau drap de laine ou trench Longchamp"),
+        "manteau_fourrure": (80.0, 160.0, 320.0, "Manteau peau lainée ou shearling Longchamp"),
+        "chaussures": (30.0, 55.0, 100.0, "Mocassins cuir ou espadrilles Longchamp"),
+        "bottes": (40.0, 80.0, 150.0, "Bottes cavalières en cuir Longchamp"),
+        "escarpins": (28.0, 50.0, 90.0, "Escarpins cuir ou sandales Longchamp"),
+        "robe": (30.0, 60.0, 120.0, "Robe en soie ou cocktail Longchamp"),
+        "jupe": (25.0, 45.0, 85.0, "Jupe cuir ou trapèze Longchamp"),
+        "jean": (22.0, 40.0, 75.0, "Pantalon denim Longchamp"),
+        "pantalon": (25.0, 48.0, 90.0, "Pantalon en cuir ou habillé Longchamp"),
+        "pull_maille": (30.0, 58.0, 110.0, "Pull cachemire ou maille Longchamp"),
+        "sweat": (28.0, 52.0, 100.0, "Sweat logo cavalier Longchamp"),
+        "chemise_blouse": (25.0, 45.0, 85.0, "Chemise en soie ou blouse Longchamp"),
+        "top": (18.0, 35.0, 65.0, "Top en soie ou sans manches Longchamp"),
+        "tshirt": (18.0, 35.0, 65.0, "T-shirt cavalier Longchamp"),
+    },
+
     # ==========================================
     # TIER 1 : DIFFUSION & CONTEMPORARY PREMIUM
     # ==========================================

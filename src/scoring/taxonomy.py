@@ -263,6 +263,28 @@ def detect_category(title: str, description: str = "") -> str:
 # Normalisation des marques vers une marque canonique, ligne et palier
 # Structure : canonical_brand -> { "aliases": [...], "line": "principale"|"diffusion", "tier": float }
 BRAND_REGISTRY: List[Dict[str, Any]] = [
+    # Celine
+    {
+        "canonical": "Celine",
+        "line": "principale",
+        "tier": 3.0,
+        "aliases": ["celine", "céline", "celine paris", "céline paris"]
+    },
+    # Coach
+    {
+        "canonical": "Coach",
+        "line": "principale",
+        "tier": 1.5,
+        "aliases": ["coach", "coach new york", "coach 1941"]
+    },
+    # Longchamp
+    {
+        "canonical": "Longchamp",
+        "line": "principale",
+        "tier": 1.5,
+        "aliases": ["longchamp", "longchamp paris", "longchamp 1948"]
+    },
+
     # Roberto Cavalli
     {
         "canonical": "Roberto Cavalli",
