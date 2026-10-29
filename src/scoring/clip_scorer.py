@@ -710,7 +710,7 @@ class FashionClipScorer:
                 hard_reject = True
                 reasons.append(f"CLIP rejet visuel : sac de boutique en papier / packaging détecté ({p_shopbag*100:.0f}%)")
 
-        # Rejet visuel des pièces basiques (t-shirts simples unis et jeans bleus classiques)
+        # Rejet visuel des pièces basiques (t-shirts, jeans, chemises et pantalons)
         p_plain = pattern_scores.get("plain", 0.0)
         if clip_category == "tshirt":
             if p_plain >= 0.58 and distinct_score < 0.42:
@@ -722,6 +722,20 @@ class FashionClipScorer:
             if is_plain_jean and not is_runway:
                 hard_reject = True
                 reasons.append(f"CLIP rejet pièce basique : jean bleu classique standard sans distinctivité (distinctivité {distinct_score*100:.0f}%)")
+        elif clip_category == "chemise_blouse":
+            is_plain_shirt = (p_plain >= 0.55 and distinct_score < 0.42)
+            is_noble_fabric = material_top in ("silk_satin", "leather")
+            is_runway_shirt = style_scores.get("runway_luxury", 0.0) >= 0.45 or style_scores.get("vintage_designer", 0.0) >= 0.50
+            if is_plain_shirt and not is_noble_fabric and not is_runway_shirt:
+                hard_reject = True
+                reasons.append(f"CLIP rejet pièce basique : chemise/blouse unie classique sans motif ni matière noble ({p_plain*100:.0f}%, distinctivité {distinct_score*100:.0f}%)")
+        elif clip_category == "pantalon":
+            is_plain_pant = (p_plain >= 0.52 and distinct_score < 0.40)
+            is_noble_fabric_pant = material_top in ("leather", "suede", "silk_satin")
+            is_runway_pant = style_scores.get("runway_luxury", 0.0) >= 0.45 or style_scores.get("vintage_designer", 0.0) >= 0.50
+            if is_plain_pant and not is_noble_fabric_pant and not is_runway_pant:
+                hard_reject = True
+                reasons.append(f"CLIP rejet pièce basique : pantalon uni classique standard ({p_plain*100:.0f}%, distinctivité {distinct_score*100:.0f}%)")
 
         # Rejet visuel hauts Kenzo tête de tigre / lion
         b_raw = (str(item.get("brand_title") or item.get("brand") or "")).lower()

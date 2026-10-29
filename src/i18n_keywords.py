@@ -128,7 +128,83 @@ BOUTIQUE_PACKAGING_KEYWORDS = [
     "papiertüte", "papiertasche", "einkaufstüte", "boutique tüte", "geschenktüte"
 ]
 
-BASIC_ITEMS_KEYWORDS = [
+BASIC_SHIRTS_KEYWORDS = [
+    # Français
+    "chemise classique", "chemise de bureau", "chemise basique", "chemise homme classique", "chemise homme",
+    "chemise blanche classique", "chemise blanche", "chemise bleue classique", "chemise bleue", "chemise ciel",
+    "chemise popeline", "chemise unie", "chemise coton basique", "chemise regular", "chemise slim fit",
+    "chemise a rayures", "chemise à rayures", "chemise rayee", "chemise rayée", "chemise business",
+    "chemisier classique", "chemisier basique", "chemisier blanc", "chemisier uni",
+    # Italien
+    "camicia classica", "camicia uomo", "camicia uomo classica", "camicia bianca", "camicia celeste",
+    "camicia azzurra", "camicia blu", "camicia basica", "camicia ufficio", "camicia cotone basica",
+    "camicia regular", "camicia slim fit", "camicia a righe", "camicia righe", "camicia business",
+    # Espagnol
+    "camisa clasica", "camisa clásica", "camisa hombre clasica", "camisa hombre", "camisa basica", "camisa básica",
+    "camisa blanca clasica", "camisa blanca", "camisa azul clasica", "camisa azul", "camisa oficina",
+    "camisa a rayas", "camisa rayas", "camisa popelin", "camisa lisa",
+    # Anglais
+    "basic shirt", "classic shirt", "plain shirt", "office shirt", "formal shirt", "dress shirt",
+    "white dress shirt", "blue dress shirt", "regular shirt", "striped shirt", "oxford shirt",
+    "white shirt", "plain button shirt", "business shirt",
+    # Allemand / Néerlandais
+    "klassisches hemd", "business hemd", "basis hemd", "weisses hemd", "weißes hemd", "blaues hemd", "streifenhemd",
+    "effen hemd", "klassiek hemd", "wit overhemd", "blauw overhemd"
+]
+
+BASIC_PANTS_KEYWORDS = [
+    # Français
+    "pantalon classique", "pantalon droit classique", "pantalon de bureau", "pantalon tailleur basique",
+    "pantalon tailleur classique", "pantalon noir classique", "pantalon gris classique", "pantalon basique",
+    "pantalon simple", "pantalon chino basique", "pantalon regular classique", "pantalon a pinces classique",
+    "pantalon à pinces classique", "pantalon costume", "pantalon de costume", "pantalon ville",
+    "pantalon droit noir", "pantalon droit basique", "pantalon uni",
+    # Italien
+    "pantaloni classici", "pantalone classico", "pantaloni sartoriali", "pantalone sartoriale",
+    "pantaloni ufficio", "pantalone ufficio", "pantalone basico", "pantaloni basici",
+    "pantalone nero classico", "pantalone grigio classico", "pantalone abito", "pantaloni da abito",
+    "pantalone dritto", "pantaloni dritti", "pantaloni eleganti basic",
+    # Espagnol
+    "pantalon clasico", "pantalón clásico", "pantalones clasicos", "pantalones clásicos",
+    "pantalon sastre clasico", "pantalones de vestir basicos", "pantalon oficina", "pantalon traje",
+    "pantalones traje", "pantalon basico", "pantalon recto clasico", "pantalon negro basico",
+    # Anglais
+    "classic trousers", "plain trousers", "basic trousers", "formal trousers", "office trousers",
+    "dress pants", "classic slacks", "basic pants", "plain pants", "suit trousers",
+    "straight trousers", "regular trousers", "work trousers", "black trousers",
+    # Allemand / Néerlandais
+    "klassische hose", "anzughose", "business hose", "schwarze hose",
+    "klassieke pantalon", "nette broek", "zwarte pantalon"
+]
+
+DISTINCTIVE_SHIELD_KEYWORDS = [
+    # Matières nobles / luxueuses
+    "soie", "silk", "seta", "seda", "seide",
+    "cuir", "leather", "pelle", "cuero", "leder",
+    "velours", "velvet", "velluto", "terciopelo", "samt",
+    "dentelle", "lace", "pizzo", "encaje", "spitze",
+    "satin", "raso",
+    "lin", "linen", "lino", "leinen",
+    "mousseline", "chiffon", "georgette", "organza", "tulle",
+    "cachemire", "cashmere", "kaschmir",
+    # Motifs et imprimés iconiques
+    "tartan", "nova check", "check", "carreaux", "quadri", "cuadros", "vichy", "gingham",
+    "imprime", "imprimé", "print", "printed", "stampa", "stampato", "estampado", "druck", "bedruckt", "patterned",
+    "fleur", "fleurs", "floral", "florale", "floreale", "blumen", "flower", "flowers",
+    "barocco", "baroque", "barroco", "foulard",
+    "animalier", "leopard", "léopard", "leopardo", "zebra", "zebre", "zèbre",
+    # Détails / finitions couture
+    "brode", "brodé", "broderie", "embroidered", "embroidery", "ricamato", "ricamo", "bordado",
+    "sequin", "sequins", "strass", "paillette", "paillettes", "glitter", "lurex", "perles", "beaded",
+    "volant", "volants", "jabot", "plisse", "plissé", "pleated", "drape", "drapé",
+    # Défilés / Archives
+    "runway", "defile", "défilé", "sfilata", "desfile", "archive", "collector",
+    # Coupes très spécifiques pantalon non-classique
+    "cargo", "palazzo", "flare", "patte d'eph", "patte d eph", "wide leg"
+]
+
+BASIC_ITEMS_KEYWORDS = BASIC_SHIRTS_KEYWORDS + BASIC_PANTS_KEYWORDS + [
+
     "maglione basico",
     "sueter basico",
     "pull noir uni",

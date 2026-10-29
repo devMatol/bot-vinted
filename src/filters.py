@@ -11,6 +11,7 @@ from src.i18n_keywords import (
     TOILETRY_KEYWORDS,
     BOUTIQUE_PACKAGING_KEYWORDS,
     BASIC_ITEMS_KEYWORDS,
+    DISTINCTIVE_SHIELD_KEYWORDS,
     FAKE_MARKERS,
     SATISFACTORY_STATUS_MARKERS,
     GENDER_KEYWORDS_MEN,
@@ -520,16 +521,18 @@ class DealEvaluator:
             if contains_whole_word(norm_title, bk):
                 return False, f"Article exclu (sac de boutique / packaging : '{bk}')"
 
-        # 3f. Exclusion des pièces basiques (t-shirts simples / unis, jeans bleus classiques)
-        for bi in BASIC_ITEMS_KEYWORDS:
-            if contains_whole_word(norm_title, bi):
-                return False, f"Pièce basique exclue ('{bi}')"
+        # 3f. Exclusion des pièces basiques (t-shirts simples, jeans classiques, chemises et pantalons basiques)
+        has_shield = any(contains_whole_word(norm_title, sk) for sk in DISTINCTIVE_SHIELD_KEYWORDS)
+        if not has_shield:
+            for bi in BASIC_ITEMS_KEYWORDS:
+                if contains_whole_word(norm_title, bi):
+                    return False, f"Pièce basique exclue ('{bi}')"
 
-        basic_markers = ["basique", "basica", "básica", "basico", "básico", "simple", "semplice"]
-        if any(contains_whole_word(norm_title, bm) for bm in basic_markers):
-            cloth_markers = ["tshirt", "t-shirt", "tee", "top", "pull", "sweat", "jean", "jeans", "pantalon", "camicia", "chemise", "maglia", "camiseta"]
-            if any(contains_whole_word(norm_title, cm) for cm in cloth_markers):
-                return False, "Pièce explicitement qualifiée de basique / simple"
+            basic_markers = ["basique", "basica", "básica", "basico", "básico", "simple", "semplice"]
+            if any(contains_whole_word(norm_title, bm) for bm in basic_markers):
+                cloth_markers = ["tshirt", "t-shirt", "tee", "top", "pull", "sweat", "jean", "jeans", "pantalon", "camicia", "chemise", "maglia", "camiseta"]
+                if any(contains_whole_word(norm_title, cm) for cm in cloth_markers):
+                    return False, "Pièce explicitement qualifiée de basique / simple"
 
         # 4. Gestion du Genre : Homme vs Femme vs Unisexe
         search_name = (search_config.get("name") or "").lower()
@@ -663,6 +666,14 @@ class DealEvaluator:
                 detected_c = item.get("detected_category") or ""
                 if detected_c in {"tshirt", "top", "chemise_blouse", "sweat", "pull_maille"} or any(contains_whole_word(norm_full, tk) for tk in top_kws):
                     return False, "Haut Kenzo tête de tigre / lion exclu"
+
+        # 3d. Exclusion des pièces basiques (chemises, pantalons, t-shirts, jeans) sur texte complet
+        norm_full_item = normalize_text(full_text)
+        has_shield_full = any(contains_whole_word(norm_full_item, sk) for sk in DISTINCTIVE_SHIELD_KEYWORDS)
+        if not has_shield_full:
+            for bi in BASIC_ITEMS_KEYWORDS:
+                if contains_whole_word(norm_full_item, bi):
+                    return False, f"Pièce basique exclue ('{bi}')"
 
         # 4. Validation Stricte de la Marque Cible
         brand_target = search_config.get("brand")
