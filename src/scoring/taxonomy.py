@@ -277,6 +277,19 @@ BRAND_REGISTRY: List[Dict[str, Any]] = [
         "tier": 1.5,
         "aliases": ["coach", "coach new york", "coach 1941"]
     },
+    # John Galliano
+    {
+        "canonical": "John Galliano",
+        "line": "diffusion",
+        "tier": 1.5,
+        "aliases": ["galliano"]
+    },
+    {
+        "canonical": "John Galliano",
+        "line": "principale",
+        "tier": 1.5,
+        "aliases": ["john galliano"]
+    },
     # Longchamp
     {
         "canonical": "Longchamp",
@@ -431,7 +444,7 @@ BRAND_REGISTRY: List[Dict[str, Any]] = [
         "canonical": "Jean Paul Gaultier",
         "line": "principale",
         "tier": 1.5,
-        "aliases": ["jean paul gaultier", "jpg"]
+        "aliases": ["jean paul gaultier", "jean paul gautier", "gaultier", "jpg"]
     },
     # Diffusion et marques courantes
     {
